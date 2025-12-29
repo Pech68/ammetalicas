@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AM METÁLICAS - Acceso Seguro</title>
+    
+    <!-- Corrección Meta Tags Deprecated -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+
+    <!-- Corrección Favicon 404 -->
+    <link rel="icon" href="https://i.imgur.com/PaRQ1IL.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Iconos Lucide (Con manejo de error en carga) -->
@@ -11,10 +21,6 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <style>
         :root {
             --safe-bottom: env(safe-area-inset-bottom, 20px);
@@ -113,10 +119,9 @@
             body { background: white; }
         }
 
-        /* Loading Overlay CORREGIDO */
         #loader {
             position: fixed; inset: 0; background: #000; z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; /* CORREGIDO: align-items */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.5s;
         }
     </style>
@@ -126,9 +131,45 @@
     <!-- PANTALLA DE CARGA -->
     <div id="loader">
         <div class="h-12 w-12 border-4 border-gray-800 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-amber-500 font-bold tracking-widest text-xs animate-pulse" id="loader-text">VERIFICANDO CREDENCIALES...</p>
-        <p class="text-red-500 text-xs mt-4 hidden" id="loader-error">Error de conexión. Recarga la página.</p>
+        <p class="text-amber-500 font-bold tracking-widest text-xs animate-pulse" id="loader-text">INICIANDO SISTEMA...</p>
+        <p class="text-gray-500 text-[10px] mt-2" id="loader-status">Conectando nube...</p>
+        <button onclick="forceUnlockLoader()" id="btn-force-load" class="hidden mt-6 text-xs text-red-500 underline">
+            Forzar ingreso (Problemas de conexión)
+        </button>
     </div>
+
+    <!-- SCRIPT SALVAVIDAS (FAILSAFE) -->
+    <!-- Este script corre fuera del módulo para garantizar que si Firebase falla, la app no se bloquee -->
+    <script>
+        function forceUnlockLoader() {
+            const loader = document.getElementById('loader');
+            if (loader && !loader.classList.contains('hidden')) {
+                loader.classList.add('hidden');
+                document.getElementById('view-login').classList.remove('hidden');
+            }
+        }
+
+        // Si en 4 segundos no ha cargado, mostrar botón de emergencia o desbloquear
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            const btn = document.getElementById('btn-force-load');
+            const status = document.getElementById('loader-status');
+            
+            if (loader && !loader.classList.contains('hidden')) {
+                console.warn("La carga está tardando. Activando modo seguro.");
+                status.textContent = "La conexión está lenta...";
+                // Mostrar botón para que el usuario decida si espera o entra
+                btn.classList.remove('hidden'); 
+                
+                // Opcional: Desbloquear automáticamente a los 7 segundos si sigue pegado
+                setTimeout(() => {
+                    if (!loader.classList.contains('hidden')) {
+                        forceUnlockLoader();
+                    }
+                }, 3000);
+            }
+        }, 4000);
+    </script>
 
     <!-- VISTA LOGIN -->
     <div id="view-login" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 hidden fade-in">
@@ -460,19 +501,6 @@
 
         // --- SISTEMA DE AUTENTICACIÓN ---
         
-        // Timeout de seguridad: Si en 5 segundos no ha cargado (por el error 404), forzar mostrar login o error
-        setTimeout(() => {
-            const loader = document.getElementById('loader');
-            if (!loader.classList.contains('hidden')) {
-                // Si sigue visible, es que Firebase no respondió a tiempo
-                console.warn("Tiempo de carga excedido. Forzando UI.");
-                // Ocultar loader y mostrar login por defecto para desbloquear
-                loader.classList.add('hidden');
-                document.getElementById('view-login').classList.remove('hidden');
-                document.getElementById('loader-error').classList.remove('hidden'); // Mostrar error en loader si reaparece
-            }
-        }, 3000); // 3 segundos de espera máxima
-
         // Manejo de formulario Login
         document.getElementById('form-login').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -498,7 +526,9 @@
 
         // ESCUCHADOR DE ESTADO DE SESIÓN
         onAuthStateChanged(auth, (user) => {
-            document.getElementById('loader').classList.add('hidden'); // Ocultar loader inicial
+            // El loader se oculta en el script failsafe, pero lo forzamos aquí también por si acaso
+            const loader = document.getElementById('loader');
+            if(loader) loader.classList.add('hidden');
             
             if (user) {
                 // USUARIO LOGUEADO
