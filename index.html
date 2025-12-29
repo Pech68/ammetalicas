@@ -6,8 +6,8 @@
     <title>AM METÁLICAS - Acceso Seguro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Iconos Lucide (Con manejo de error en carga) -->
+    <script src="https://unpkg.com/lucide@latest" onerror="console.error('Error cargando iconos')"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -113,10 +113,10 @@
             body { background: white; }
         }
 
-        /* Loading Overlay */
+        /* Loading Overlay CORREGIDO */
         #loader {
             position: fixed; inset: 0; background: #000; z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; items-center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; /* CORREGIDO: align-items */
             transition: opacity 0.5s;
         }
     </style>
@@ -126,10 +126,11 @@
     <!-- PANTALLA DE CARGA -->
     <div id="loader">
         <div class="h-12 w-12 border-4 border-gray-800 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-amber-500 font-bold tracking-widest text-xs animate-pulse">VERIFICANDO CREDENCIALES...</p>
+        <p class="text-amber-500 font-bold tracking-widest text-xs animate-pulse" id="loader-text">VERIFICANDO CREDENCIALES...</p>
+        <p class="text-red-500 text-xs mt-4 hidden" id="loader-error">Error de conexión. Recarga la página.</p>
     </div>
 
-    <!-- VISTA LOGIN (NUEVA) -->
+    <!-- VISTA LOGIN -->
     <div id="view-login" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 hidden fade-in">
         <div class="w-full max-w-sm">
             <div class="text-center mb-10">
@@ -161,7 +162,7 @@
         </div>
     </div>
 
-    <!-- APP HEADER (Solo visible si logueado) -->
+    <!-- APP HEADER -->
     <header id="app-header" class="hidden bg-gray-900 border-b border-gray-800 p-4 pt-safe-top z-20 flex justify-between items-center h-16 no-print">
         <div class="flex items-center gap-3">
             <div class="h-10 w-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg">
@@ -459,6 +460,19 @@
 
         // --- SISTEMA DE AUTENTICACIÓN ---
         
+        // Timeout de seguridad: Si en 5 segundos no ha cargado (por el error 404), forzar mostrar login o error
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            if (!loader.classList.contains('hidden')) {
+                // Si sigue visible, es que Firebase no respondió a tiempo
+                console.warn("Tiempo de carga excedido. Forzando UI.");
+                // Ocultar loader y mostrar login por defecto para desbloquear
+                loader.classList.add('hidden');
+                document.getElementById('view-login').classList.remove('hidden');
+                document.getElementById('loader-error').classList.remove('hidden'); // Mostrar error en loader si reaparece
+            }
+        }, 3000); // 3 segundos de espera máxima
+
         // Manejo de formulario Login
         document.getElementById('form-login').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -559,7 +573,12 @@
         window.deleteTrans = deleteTrans;
         
         document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            // Verificar si lucide cargó correctamente antes de usarlo
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                console.warn("Librería de iconos no cargada (posiblemente offline)");
+            }
             document.getElementById('q-date').valueAsDate = new Date();
         });
 
@@ -625,7 +644,8 @@
             document.getElementById('dash-receivable').textContent = formatMoney(tRec);
             document.getElementById('dash-sales').textContent = formatMoney(tSales);
             document.getElementById('active-projects-count').textContent = `${active} Activos`;
-            lucide.createIcons();
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         // --- NUEVO PROYECTO (FIREBASE) ---
@@ -701,7 +721,7 @@
                 `;
                 list.appendChild(div);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             showView('project');
         }
 
@@ -807,7 +827,7 @@
                 `;
                 list.appendChild(div);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             calculateQuoteTotal();
         }
         function calculateQuoteTotal() {
