@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AM METÁLICAS - Acceso Seguro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        :root {
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+
+        input, select, textarea { font-size: 16px !important; }
+
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 1rem;
+        }
+        
+        .input-group { position: relative; margin-bottom: 1rem; }
+        .input-field {
+            width: 100%;
+            background-color: #111827;
+            border: 1px solid #374151;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            outline: none;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+        }
+        .input-field:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+        .input-label {
+            position: absolute;
+            top: -0.6rem;
+            left: 0.8rem;
+            background-color: #000000;
+            padding: 0 0.4rem;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 600; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; font-weight: 600; }
+
+        .fab-menu {
+            position: fixed;
+            bottom: calc(5rem + var(--safe-bottom));
+            right: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: end;
+            z-index: 40;
+            pointer-events: none;
+        }
+        .fab-btn {
+            pointer-events: auto;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        .fab-btn:active { transform: scale(0.9); }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            body { background: white; }
+        }
+
+        /* Loading Overlay */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; items-center;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-100">
+
+    <!-- PANTALLA DE CARGA -->
+    <div id="loader">
+        <div class="h-12 w-12 border-4 border-gray-800 border-t-amber-500 rounded-full animate-spin mb-4"></div>
+        <p class="text-amber-500 font-bold tracking-widest text-xs animate-pulse">VERIFICANDO CREDENCIALES...</p>
+    </div>
+
+    <!-- VISTA LOGIN (NUEVA) -->
+    <div id="view-login" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 hidden fade-in">
+        <div class="w-full max-w-sm">
+            <div class="text-center mb-10">
+                <div class="h-24 w-24 bg-black rounded-2xl flex items-center justify-center overflow-hidden border-2 border-amber-500 shadow-2xl mx-auto mb-4">
+                    <img src="https://i.imgur.com/PaRQ1IL.png" alt="AM Metalicas" class="h-full w-full object-contain">
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-widest">AM METÁLICAS</h1>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mt-1">Acceso Administrativo</p>
+            </div>
+
+            <form id="form-login" class="space-y-6">
+                <div class="input-group">
+                    <label class="input-label">Usuario (Email)</label>
+                    <input type="email" id="login-email" class="input-field" placeholder="admin@ammetalicas.com" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Contraseña</label>
+                    <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
+                </div>
+                
+                <div id="login-error" class="hidden bg-red-900/50 border border-red-500 text-red-200 text-xs p-3 rounded text-center">
+                    Error: Credenciales incorrectas.
+                </div>
+
+                <button type="submit" class="w-full py-4 btn-primary rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2">
+                    INGRESAR <i data-lucide="arrow-right" size="20"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP HEADER (Solo visible si logueado) -->
+    <header id="app-header" class="hidden bg-gray-900 border-b border-gray-800 p-4 pt-safe-top z-20 flex justify-between items-center h-16 no-print">
+        <div class="flex items-center gap-3">
+            <div class="h-10 w-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg">
+                <img src="https://i.imgur.com/PaRQ1IL.png" alt="AM Metalicas" class="h-full w-full object-contain">
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white leading-tight">AM METÁLICAS</h1>
+                <div class="flex items-center gap-1">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <p class="text-[10px] text-gray-400 font-medium tracking-widest" id="user-email-display">ADMIN</p>
+                </div>
+            </div>
+        </div>
+        <button onclick="logout()" class="text-gray-500 hover:text-white p-2">
+            <i data-lucide="log-out" size="20"></i>
+        </button>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main id="app-content" class="hidden flex-1 overflow-y-auto no-scrollbar relative bg-black">
+        
+        <!-- VISTA DASHBOARD (HOME) -->
+        <div id="view-home" class="p-4 pb-32 fade-in">
+            
+            <!-- Resumen Financiero -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="card col-span-2 bg-gradient-to-br from-gray-800 to-gray-900 p-4">
+                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Caja Real (En Mano)</span>
+                    <div class="flex items-baseline gap-1 mt-1">
+                        <span class="text-3xl font-bold text-white tracking-tight" id="dash-cashflow">$0</span>
+                    </div>
+                    <div class="mt-3 flex gap-2 text-xs">
+                        <span class="text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Ingresos</span>
+                        <span class="text-red-500 bg-red-500/10 px-2 py-1 rounded">Gastos</span>
+                    </div>
+                </div>
+
+                <div class="card p-4 border-l-4 border-l-red-500">
+                    <span class="text-[10px] text-gray-400 uppercase">Por Cobrar</span>
+                    <span class="text-lg font-bold text-red-400 mt-1" id="dash-receivable">$0</span>
+                </div>
+
+                <div class="card p-4 border-l-4 border-l-emerald-500">
+                    <span class="text-[10px] text-gray-400 uppercase">Ventas Totales</span>
+                    <span class="text-lg font-bold text-emerald-400 mt-1" id="dash-sales">$0</span>
+                </div>
+            </div>
+
+            <!-- Botón Grande Cotizador -->
+            <button onclick="showView('quote-builder')" class="w-full mb-6 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl p-4 flex items-center justify-between group transition">
+                <div class="flex items-center gap-4">
+                    <div class="bg-amber-500/20 p-3 rounded-full text-amber-500">
+                        <i data-lucide="file-text" size="24"></i>
+                    </div>
+                    <div class="text-left">
+                        <h3 class="font-bold text-white">Crear Cotización</h3>
+                        <p class="text-xs text-gray-400">Generar PDF para cliente</p>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-gray-500 group-hover:text-white"></i>
+            </button>
+
+            <!-- Sección Proyectos -->
+            <div class="flex justify-between items-end mb-4 px-1">
+                <h3 class="text-white font-bold text-lg">Proyectos Recientes</h3>
+                <span class="text-xs text-amber-500 font-medium" id="active-projects-count">Cargando...</span>
+            </div>
+
+            <div id="projects-list" class="space-y-4">
+                <!-- Inyectado por Firebase -->
+            </div>
+            
+            <div class="h-20"></div>
+        </div>
+
+        <!-- VISTA COTIZADOR -->
+        <div id="view-quote-builder" class="hidden min-h-full bg-black fade-in pb-32 p-4">
+            <div class="flex items-center gap-4 mb-6">
+                <button onclick="goHome()" class="p-2 -ml-2 text-gray-400 hover:text-white">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <h2 class="text-xl font-bold text-white">Nueva Cotización</h2>
+            </div>
+            <div class="card p-4 mb-4">
+                <h3 class="text-sm font-bold text-amber-500 mb-3 uppercase">Cliente</h3>
+                <div class="grid gap-4">
+                    <input type="text" id="q-client" class="input-field" placeholder="Nombre del Cliente" required>
+                    <input type="date" id="q-date" class="input-field text-gray-400">
+                </div>
+            </div>
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-bold text-amber-500 uppercase">Items / Servicios</h3>
+                    <button onclick="addQuoteItem()" class="text-xs bg-gray-800 px-3 py-1 rounded text-white border border-gray-600 flex items-center gap-1">
+                        <i data-lucide="plus" size="12"></i> Agregar Item
+                    </button>
+                </div>
+                <div id="quote-items-list" class="space-y-3"></div>
+            </div>
+            <div class="card p-4 mb-6 flex justify-between items-center">
+                <span class="text-gray-400">Total Estimado:</span>
+                <span class="text-2xl font-bold text-white" id="q-total-preview">$0</span>
+            </div>
+            <button onclick="generatePDF()" class="w-full py-4 btn-primary rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2">
+                <i data-lucide="printer"></i> Vista Previa / Imprimir
+            </button>
+        </div>
+
+        <!-- VISTA DETALLE PROYECTO -->
+        <div id="view-project" class="hidden min-h-full bg-gray-900 fade-in pb-24">
+            <div class="sticky top-0 bg-gray-900/95 backdrop-blur border-b border-gray-800 p-4 flex items-center gap-4 z-10">
+                <button onclick="goHome()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="flex-1 overflow-hidden">
+                    <h2 class="font-bold text-lg truncate" id="p-detail-name">Proyecto</h2>
+                </div>
+                <a id="whatsapp-link" href="#" target="_blank" class="p-2 bg-emerald-600 rounded-full text-white shadow-lg hover:bg-emerald-500">
+                    <i data-lucide="message-circle" size="20"></i>
+                </a>
+            </div>
+
+            <div class="p-4">
+                <div class="card p-5 mb-6 relative overflow-hidden">
+                     <div class="grid grid-cols-2 gap-6 text-center mb-4">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase mb-1">Total</p>
+                            <p class="text-xl font-bold text-white" id="pd-budget">$0</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase mb-1">Pendiente</p>
+                            <p class="text-xl font-bold text-red-400" id="pd-pending">$0</p>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                         <div class="flex justify-between text-xs mb-1">
+                            <span class="text-emerald-400">Recibido</span>
+                            <span class="text-gray-500" id="pd-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                            <div id="pd-bar-income" class="bg-emerald-500 h-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex border-b border-gray-800 mb-4">
+                    <button class="flex-1 pb-3 text-sm font-medium text-amber-500 border-b-2 border-amber-500">Movimientos</button>
+                </div>
+                <div id="transactions-list" class="space-y-3"></div>
+                <div class="mt-10 pt-10 border-t border-gray-800 text-center">
+                    <button onclick="deleteCurrentProject()" class="text-red-900 text-xs py-2 px-4 rounded hover:bg-red-900/20 hover:text-red-500 transition">
+                        Eliminar Proyecto
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA NUEVO PROYECTO -->
+        <div id="view-new" class="hidden p-6 fade-in h-full bg-black">
+            <h2 class="text-2xl font-bold text-white mb-6">Nuevo Trabajo</h2>
+            <form id="form-new" class="space-y-6">
+                <div class="input-group">
+                    <label class="input-label">Nombre del Proyecto</label>
+                    <input type="text" id="new-name" class="input-field" placeholder="Ej: Estructura Bodega" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Valor Total</label>
+                    <input type="number" id="new-budget" class="input-field text-amber-400 font-bold" placeholder="0" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label class="input-label">Cliente</label>
+                        <input type="text" id="new-client" class="input-field" placeholder="Opcional">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Teléfono</label>
+                        <input type="tel" id="new-phone" class="input-field" placeholder="300...">
+                    </div>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" onclick="goHome()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold">Cancelar</button>
+                    <button type="submit" class="flex-1 py-4 btn-primary rounded-xl text-black">CREAR</button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+
+    <!-- ÁREA IMPRESIÓN -->
+    <div id="printable-area" class="hidden bg-white text-black p-8 font-serif">
+        <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
+            <div class="flex items-center gap-4">
+                 <img src="https://i.imgur.com/PaRQ1IL.png" alt="Logo" class="h-20 w-auto object-contain">
+                 <div>
+                     <h1 class="text-3xl font-bold tracking-wider">AM METÁLICAS</h1>
+                     <p class="text-sm text-gray-600">Soldadura y Estructuras</p>
+                     <p class="text-sm text-gray-600">Cel: 300 000 0000</p>
+                 </div>
+            </div>
+            <div class="text-right">
+                <h2 class="text-2xl font-bold text-gray-800">COTIZACIÓN</h2>
+                <p class="text-sm mt-1">Fecha: <span id="print-date">DD/MM/AAAA</span></p>
+            </div>
+        </div>
+        <div class="mb-8">
+            <p class="font-bold">Cliente:</p>
+            <p class="text-xl border-b border-dotted border-gray-400 pb-1" id="print-client">Nombre Cliente</p>
+        </div>
+        <table class="w-full mb-8 border-collapse">
+            <thead>
+                <tr class="bg-gray-100 border-b-2 border-black text-left">
+                    <th class="p-2 font-bold w-16">Cant.</th>
+                    <th class="p-2 font-bold">Descripción</th>
+                    <th class="p-2 font-bold text-right w-32">V. Unit</th>
+                    <th class="p-2 font-bold text-right w-32">Total</th>
+                </tr>
+            </thead>
+            <tbody id="print-items-body"></tbody>
+            <tfoot>
+                <tr class="border-t-2 border-black">
+                    <td colspan="3" class="text-right p-3 font-bold text-xl">TOTAL:</td>
+                    <td class="text-right p-3 font-bold text-xl" id="print-total">$0</td>
+                </tr>
+            </tfoot>
+        </table>
+        <div class="mt-12 text-center text-sm text-gray-500">
+            <p>Esta cotización tiene una validez de 15 días.</p>
+            <p class="mt-4 pt-8 border-t border-gray-300 w-1/2 mx-auto">Firma Autorizada</p>
+            <p class="mt-2 font-bold">AM METÁLICAS</p>
+        </div>
+    </div>
+
+    <!-- UI FLOTANTE -->
+    <div id="fab-menu" class="fab-menu hidden no-print">
+        <button onclick="openTransactionModal('expense')" class="fab-btn bg-red-600 text-white"><i data-lucide="minus"></i></button>
+        <button onclick="openTransactionModal('income')" class="fab-btn bg-emerald-500 text-white"><i data-lucide="plus"></i></button>
+    </div>
+
+    <button id="fab-home" onclick="showView('new')" class="hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,20px))] right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-xl z-30 no-print">
+        <i data-lucide="plus" size="32" color="black"></i>
+    </button>
+
+    <!-- MODAL TRANSACCIÓN -->
+    <div id="modal-trans" class="fixed inset-0 bg-black/90 z-50 hidden flex items-end sm:items-center justify-center fade-in no-print">
+        <div class="bg-gray-900 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 border-t border-gray-800 sm:border shadow-2xl mb-safe">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white" id="modal-title">Registrar</h3>
+                <button onclick="closeModal()" class="text-gray-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="form-trans" class="space-y-5">
+                <input type="hidden" id="trans-type">
+                <div class="input-group">
+                    <label class="input-label">Monto ($)</label>
+                    <input type="number" id="trans-amount" class="input-field text-2xl font-bold" placeholder="0" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Descripción</label>
+                    <input type="text" id="trans-desc" class="input-field" placeholder="Descripción" required>
+                </div>
+                <div id="cat-selector" class="grid grid-cols-3 gap-2 hidden">
+                     <label class="cursor-pointer"><input type="radio" name="trans-cat" value="material" class="peer hidden" checked><div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-amber-600 peer-checked:text-black">Material</div></label>
+                     <label class="cursor-pointer"><input type="radio" name="trans-cat" value="labor" class="peer hidden"><div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-blue-600">Mano Obra</div></label>
+                     <label class="cursor-pointer"><input type="radio" name="trans-cat" value="transport" class="peer hidden"><div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-purple-600">Transporte</div></label>
+                </div>
+                <button type="submit" class="w-full py-4 rounded-xl font-bold text-lg mt-4" id="btn-save-trans">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIREBASE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE TU PROYECTO
+        const firebaseConfig = {
+          apiKey: "AIzaSyAgS7x69vy3xugdH-kigFsDMot_CCm05RM",
+          authDomain: "cunadoapp.firebaseapp.com",
+          projectId: "cunadoapp",
+          storageBucket: "cunadoapp.firebasestorage.app",
+          messagingSenderId: "766004124626",
+          appId: "1:766004124626:web:811a1a2e9df15c1be8060b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // ESTADO GLOBAL
+        let currentUser = null;
+        let projects = [];
+        let currentProjectId = null;
+        let unsubscribeProjects = null;
+
+        // --- SISTEMA DE AUTENTICACIÓN ---
+        
+        // Manejo de formulario Login
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            try {
+                errorEl.classList.add('hidden');
+                await signInWithEmailAndPassword(auth, email, pass);
+                // Auth listener manejará el cambio de vista
+            } catch (error) {
+                console.error("Login Error:", error);
+                errorEl.textContent = "Error: Usuario o contraseña incorrectos.";
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        // Logout global
+        window.logout = () => {
+            signOut(auth);
+        };
+
+        // ESCUCHADOR DE ESTADO DE SESIÓN
+        onAuthStateChanged(auth, (user) => {
+            document.getElementById('loader').classList.add('hidden'); // Ocultar loader inicial
+            
+            if (user) {
+                // USUARIO LOGUEADO
+                currentUser = user;
+                document.getElementById('user-email-display').textContent = "ADMINISTRADOR";
+                
+                // Mostrar App
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('app-header').classList.remove('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                
+                startProjectsListener(user.uid);
+                showView('home'); // Asegurar ir al home
+            } else {
+                // USUARIO NO LOGUEADO
+                currentUser = null;
+                projects = [];
+                if(unsubscribeProjects) unsubscribeProjects();
+
+                // Ocultar App y Mostrar Login
+                document.getElementById('app-header').classList.add('hidden');
+                document.getElementById('app-content').classList.add('hidden');
+                document.getElementById('fab-home').classList.add('hidden');
+                document.getElementById('view-login').classList.remove('hidden');
+            }
+        });
+
+        // ESCUCHADOR DE DATOS (REALTIME)
+        function startProjectsListener(userId) {
+            if(unsubscribeProjects) unsubscribeProjects(); // Limpiar anterior
+
+            const projectsRef = collection(db, 'users', userId, 'projects');
+            
+            unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => {
+                projects = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Ordenar por fecha (más reciente primero)
+                projects.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Si estamos en home, re-renderizar
+                if(!document.getElementById('view-home').classList.contains('hidden')) {
+                    renderHome();
+                }
+                // Si estamos en detalle de proyecto, actualizar info
+                if(currentProjectId && !document.getElementById('view-project').classList.contains('hidden')) {
+                    openProject(currentProjectId); // Refresca la vista
+                }
+            }, (error) => {
+                console.error("Error DB:", error);
+            });
+        }
+
+        // --- FUNCIONES UI & LOGICA ---
+
+        // Variables globales para UI
+        window.projects = projects;
+        
+        // Exponer funciones al window
+        window.showView = showView;
+        window.goHome = goHome;
+        window.openProject = openProject;
+        window.addQuoteItem = addQuoteItem;
+        window.removeQuoteItem = removeQuoteItem;
+        window.updateQuoteItem = updateQuoteItem;
+        window.generatePDF = generatePDF;
+        window.openTransactionModal = openTransactionModal;
+        window.closeModal = closeModal;
+        window.deleteCurrentProject = deleteCurrentProject;
+        window.deleteTrans = deleteTrans;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.getElementById('q-date').valueAsDate = new Date();
+        });
+
+        function showView(viewId) {
+            ['view-home', 'view-project', 'view-new', 'view-quote-builder'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            const isHome = viewId === 'home';
+            const isProject = viewId === 'project';
+            
+            document.getElementById('fab-home').classList.toggle('hidden', !isHome);
+            document.getElementById('fab-menu').classList.toggle('hidden', !isProject);
+            
+            if(isHome) renderHome();
+            window.scrollTo(0,0);
+        }
+
+        function goHome() { showView('home'); }
+
+        function renderHome() {
+            const list = document.getElementById('projects-list');
+            list.innerHTML = '';
+            let tSales=0, tCol=0, tSpent=0, tRec=0, active=0;
+
+            projects.forEach(p => {
+                const trans = p.transactions || [];
+                const inc = trans.filter(t => t.type === 'income').reduce((s,t)=>s+t.amount,0);
+                const exp = trans.filter(t => t.type === 'expense').reduce((s,t)=>s+t.amount,0);
+                const pend = p.budget - inc;
+                
+                tSales += p.budget; 
+                tCol += inc; 
+                tSpent += exp; 
+                tRec += Math.max(0, pend);
+                
+                if(p.status === 'active') active++;
+
+                const el = document.createElement('div');
+                el.className = 'card p-4 active:bg-gray-800 transition cursor-pointer relative overflow-hidden';
+                el.onclick = () => openProject(p.id);
+                const stColor = pend <= 0 ? 'bg-emerald-500' : (inc > 0 ? 'bg-amber-500' : 'bg-gray-600');
+                
+                el.innerHTML = `
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div>
+                    <div class="pl-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <div><h4 class="font-bold text-white text-lg">${p.name}</h4><p class="text-xs text-gray-500">${p.client || 'Sin cliente'}</p></div>
+                            <div class="text-right"><span class="block text-xs text-gray-500">Total</span><span class="font-bold text-white">${formatMoney(p.budget)}</span></div>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 bg-gray-900/50 p-2 rounded border border-gray-700/50">
+                            <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Abonado</p><p class="text-sm font-bold text-emerald-400">${formatMoney(inc)}</p></div>
+                             <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Gastado</p><p class="text-sm font-bold text-red-400">${formatMoney(exp)}</p></div>
+                            <div class="text-center w-1/3"><p class="text-[10px] text-gray-400">Por Cobrar</p><p class="text-sm font-bold ${pend>0?'text-amber-500':'text-gray-500'}">${formatMoney(pend)}</p></div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            
+            if(projects.length === 0) list.innerHTML = `<div class="text-center py-10 opacity-30"><i data-lucide="cloud" class="mx-auto mb-2" size="48"></i><p>Sin proyectos en la nube</p></div>`;
+
+            document.getElementById('dash-cashflow').textContent = formatMoney(tCol - tSpent);
+            document.getElementById('dash-receivable').textContent = formatMoney(tRec);
+            document.getElementById('dash-sales').textContent = formatMoney(tSales);
+            document.getElementById('active-projects-count').textContent = `${active} Activos`;
+            lucide.createIcons();
+        }
+
+        // --- NUEVO PROYECTO (FIREBASE) ---
+        document.getElementById('form-new').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+
+            const newProject = {
+                name: document.getElementById('new-name').value,
+                budget: parseFloat(document.getElementById('new-budget').value),
+                client: document.getElementById('new-client').value,
+                phone: document.getElementById('new-phone').value,
+                date: new Date().toISOString(),
+                status: 'active',
+                transactions: []
+            };
+
+            try {
+                // Guardar en Firestore
+                await addDoc(collection(db, 'users', currentUser.uid, 'projects'), newProject);
+                e.target.reset();
+                goHome();
+            } catch (error) {
+                console.error("Error adding project: ", error);
+                alert("Error al guardar en la nube");
+            }
+        });
+
+        // --- DETALLES & TRANSACCIONES ---
+        function openProject(id) {
+            currentProjectId = id;
+            const p = projects.find(x => x.id === id);
+            if(!p) return;
+            
+            document.getElementById('p-detail-name').textContent = p.name;
+            const wa = document.getElementById('whatsapp-link');
+            if(p.phone) {
+                let ph = p.phone.replace(/\D/g,'');
+                if(!ph.startsWith('57')) ph = '57'+ph;
+                wa.href = `https://wa.me/${ph}?text=Hola, sobre el proyecto ${p.name}...`;
+                wa.classList.remove('hidden');
+            } else wa.classList.add('hidden');
+
+            const trans = p.transactions || [];
+            const inc = trans.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+            const exp = trans.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+            const pend = p.budget - inc;
+            
+            document.getElementById('pd-budget').textContent = formatMoney(p.budget);
+            document.getElementById('pd-pending').textContent = formatMoney(pend);
+            
+            const percent = p.budget > 0 ? (inc/p.budget)*100 : 0;
+            document.getElementById('pd-percent').textContent = Math.round(percent) + '%';
+            document.getElementById('pd-bar-income').style.width = Math.min(percent, 100) + '%';
+
+            const list = document.getElementById('transactions-list');
+            list.innerHTML = '';
+            
+            const sortedTrans = [...trans].sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+            if(sortedTrans.length === 0) list.innerHTML = `<p class="text-center text-gray-500 py-4 text-sm">Sin movimientos</p>`;
+
+            sortedTrans.forEach(t => {
+                const isInc = t.type === 'income';
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center bg-gray-800/50 p-3 rounded border border-gray-700/50';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-full ${isInc?'bg-emerald-500/20 text-emerald-500':'bg-red-500/20 text-red-500'}"><i data-lucide="${isInc?'arrow-down-left':'arrow-up-right'}" size="16"></i></div>
+                        <div><p class="text-white text-sm font-medium">${t.desc}</p><p class="text-[10px] text-gray-500 uppercase">${t.cat ? getCatLabel(t.cat) : 'Abono'} • ${new Date(t.date).toLocaleDateString()}</p></div>
+                    </div>
+                    <div class="text-right"><p class="font-bold ${isInc?'text-emerald-400':'text-white'}">${isInc?'+':'-'}${formatMoney(t.amount)}</p><button onclick="deleteTrans(${t.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button></div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+            showView('project');
+        }
+
+        // --- AGREGAR TRANSACCION (FIREBASE) ---
+        document.getElementById('form-trans').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentProjectId || !currentUser) return;
+
+            const type = document.getElementById('trans-type').value;
+            const newTrans = {
+                id: Date.now(), // ID interno de la transacción
+                type,
+                amount: parseFloat(document.getElementById('trans-amount').value),
+                desc: document.getElementById('trans-desc').value,
+                cat: type === 'expense' ? document.querySelector('input[name="trans-cat"]:checked').value : null,
+                date: new Date().toISOString()
+            };
+
+            const docRef = doc(db, 'users', currentUser.uid, 'projects', currentProjectId);
+
+            try {
+                // Usamos arrayUnion para agregar al array existente
+                await updateDoc(docRef, {
+                    transactions: arrayUnion(newTrans)
+                });
+                closeModal();
+                // No necesitamos llamar render, el onSnapshot lo hará solo
+            } catch (error) {
+                console.error("Error transaccion:", error);
+                alert("Error guardando movimiento");
+            }
+        });
+
+        // --- BORRAR (FIREBASE) ---
+        async function deleteTrans(transId) {
+            if(!confirm('¿Borrar este movimiento?')) return;
+            
+            const p = projects.find(x => x.id === currentProjectId);
+            // Firestore necesita el objeto exacto para arrayRemove, o reescribir todo el array.
+            // Para seguridad, filtramos y reescribimos el array.
+            const newTransArray = p.transactions.filter(t => t.id !== transId);
+            
+            const docRef = doc(db, 'users', currentUser.uid, 'projects', currentProjectId);
+            try {
+                await updateDoc(docRef, { transactions: newTransArray });
+            } catch (e) {
+                alert("Error al borrar");
+            }
+        }
+
+        async function deleteCurrentProject() {
+            if(!confirm('¿ELIMINAR PROYECTO COMPLETAMENTE?')) return;
+            try {
+                await deleteDoc(doc(db, 'users', currentUser.uid, 'projects', currentProjectId));
+                goHome();
+            } catch(e) {
+                alert("Error al eliminar");
+            }
+        }
+
+        // --- COTIZADOR (Local, no necesita DB) ---
+        let quoteItems = [];
+        
+        function addQuoteItem() {
+            quoteItems.push({ desc: '', qty: 1, price: 0 });
+            renderQuoteItems();
+        }
+        function removeQuoteItem(index) {
+            quoteItems.splice(index, 1);
+            renderQuoteItems();
+        }
+        function updateQuoteItem(index, field, value) {
+            quoteItems[index][field] = value;
+            calculateQuoteTotal();
+        }
+        function renderQuoteItems() {
+            const list = document.getElementById('quote-items-list');
+            list.innerHTML = '';
+            if(quoteItems.length === 0) quoteItems.push({desc: '', qty: 1, price: 0});
+
+            quoteItems.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'bg-gray-800 p-3 rounded-lg border border-gray-700 relative';
+                div.innerHTML = `
+                    <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1"><i data-lucide="trash-2" size="16"></i></button>
+                    <div class="mb-2 pr-8">
+                        <input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500" 
+                            placeholder="Descripción" value="${item.desc}" 
+                            oninput="updateQuoteItem(${idx}, 'desc', this.value)">
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-1/3">
+                            <label class="text-[10px] text-gray-400 block">Cant.</label>
+                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center" 
+                                value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))">
+                        </div>
+                        <div class="w-2/3">
+                            <label class="text-[10px] text-gray-400 block">Valor Unitario</label>
+                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono" 
+                                value="${item.price}" placeholder="0" oninput="updateQuoteItem(${idx}, 'price', parseFloat(this.value))">
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+            calculateQuoteTotal();
+        }
+        function calculateQuoteTotal() {
+            const total = quoteItems.reduce((sum, item) => sum + ( (item.qty || 0) * (item.price || 0) ), 0);
+            document.getElementById('q-total-preview').textContent = formatMoney(total);
+            return total;
+        }
+        function generatePDF() {
+            const clientName = document.getElementById('q-client').value || 'Cliente General';
+            const dateVal = document.getElementById('q-date').value;
+            const total = calculateQuoteTotal();
+            document.getElementById('print-client').textContent = clientName;
+            document.getElementById('print-date').textContent = new Date(dateVal).toLocaleDateString();
+            document.getElementById('print-total').textContent = formatMoney(total);
+            const tbody = document.getElementById('print-items-body');
+            tbody.innerHTML = '';
+            quoteItems.forEach(item => {
+                const subtotal = (item.qty || 0) * (item.price || 0);
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-300';
+                tr.innerHTML = `<td class="p-2 text-center">${item.qty}</td><td class="p-2">${item.desc}</td><td class="p-2 text-right">${formatMoney(item.price)}</td><td class="p-2 text-right font-bold">${formatMoney(subtotal)}</td>`;
+                tbody.appendChild(tr);
+            });
+            window.print();
+        }
+
+        // UTILS
+        function formatMoney(amount) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount); }
+        function getCatLabel(cat) { const map = { 'material': 'Material', 'labor': 'Mano Obra', 'transport': 'Transporte', 'misc': 'Varios' }; return map[cat] || cat; }
+        
+        // MODALS
+        function openTransactionModal(type) {
+            document.getElementById('trans-type').value = type;
+            document.getElementById('trans-amount').value = '';
+            document.getElementById('trans-desc').value = '';
+            const isInc = type === 'income';
+            document.getElementById('modal-title').textContent = isInc ? "Registrar Abono" : "Registrar Gasto";
+            document.getElementById('btn-save-trans').textContent = isInc ? "RECIBIR DINERO" : "REGISTRAR GASTO";
+            document.getElementById('btn-save-trans').className = `w-full py-4 rounded-xl font-bold text-lg mt-4 ${isInc?'btn-success':'btn-danger'}`;
+            document.getElementById('cat-selector').classList.toggle('hidden', isInc);
+            document.getElementById('trans-amount').className = `input-field text-2xl font-bold ${isInc?'text-emerald-400':'text-red-400'}`;
+            document.getElementById('modal-trans').classList.remove('hidden');
+            document.getElementById('trans-amount').focus();
+        }
+        function closeModal() { document.getElementById('modal-trans').classList.add('hidden'); }
+        document.getElementById('modal-trans').addEventListener('click', (e) => { if(e.target.id === 'modal-trans') closeModal(); });
+
+    </script>
+</body>
+</html>
