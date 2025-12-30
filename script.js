@@ -571,6 +571,58 @@ function deleteTrans(tid) { if(!confirm("¿Borrar?")) return; const idx = projec
 function shareProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(!p) return; const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); window.open(`https://wa.me/?text=${encodeURIComponent(`*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(p.budget - inc)}`)}`, '_blank'); }
 function toggleProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(p) { p.status = p.status === 'active' ? 'completed' : 'active'; saveData(); alert(`Proyecto marcado como ${p.status === 'completed' ? 'TERMINADO' : 'ACTIVO'}`); } }
 
+// --- FUNCIONES DEL MENÚ (Copia de Seguridad y UI) ---
+function toggleBackupMenu() {
+    const menu = document.getElementById('backup-menu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+function exportData() {
+    const data = {
+        projects: projects,
+        quotes: quotes,
+        finance: finance,
+        exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AM_Backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toggleBackupMenu();
+}
+
+function triggerImport() {
+    document.getElementById('file-import').click();
+}
+
+function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if(confirm("Esto reemplazará tus datos actuales con los del archivo. ¿Continuar?")) {
+                if(data.projects) localStorage.setItem(DB_KEY, JSON.stringify(data.projects));
+                if(data.quotes) localStorage.setItem(QUOTES_KEY, JSON.stringify(data.quotes));
+                if(data.finance) localStorage.setItem(FINANCE_KEY, JSON.stringify(data.finance));
+                alert("Datos restaurados correctamente.");
+                location.reload();
+            }
+        } catch(err) {
+            alert("Error al leer el archivo de respaldo.");
+        }
+    };
+    reader.readAsText(file);
+    toggleBackupMenu();
+}
+
 // Utils & Auth
 function formatMoney(amount) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount); }
 function parseMoneyInput(idOrElement) { const el = typeof idOrElement === 'string' ? document.getElementById(idOrElement) : idOrElement; return parseFloat(el.value.replace(/\./g, '').replace(/,/g, '')) || 0; }
