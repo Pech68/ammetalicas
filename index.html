@@ -5,179 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AM METÁLICAS - Gestión</title>
     
-    <!-- Enlace al Manifest para PWA -->
+    <!-- PWA & Iconos -->
     <link rel="manifest" href="manifest.json">
-    
-    <!-- Icono para iOS -->
     <link rel="apple-touch-icon" href="https://i.imgur.com/b8MWdC2.png">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AM Metálicas">
 
     <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Metadatos Móviles -->
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="AM Metálicas">
-
-    <style>
-        :root {
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
-            --safe-top: env(safe-area-inset-top, 20px);
-            --app-bg: #111;
-            --card-bg: #1f2937;
-            --primary: #f59e0b;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #222;
-            color: #f3f4f6;
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
-            /* CAMBIO CLAVE: Usar dvh (Dynamic Viewport Height) para respetar botones de Android */
-            height: 100vh; 
-            height: 100dvh; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            margin: 0;
-        }
-
-        /* Contenedor Principal (Simula el móvil) */
-        #app-container {
-            width: 100%;
-            /* CAMBIO CLAVE: Altura dinámica también aquí */
-            height: 100vh;
-            height: 100dvh;
-            max-width: 480px;
-            background-color: #000000;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            overflow: hidden;
-        }
-        
-        @media (min-width: 481px) {
-            #app-container {
-                height: 95vh;
-                border-radius: 20px;
-                border: 1px solid #333;
-            }
-        }
-
-        /* Ajustes de Inputs */
-        input, select, textarea { font-size: 16px !important; }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid #374151;
-            border-radius: 1rem;
-        }
-        
-        .input-group { position: relative; margin-bottom: 1rem; }
-        .input-field {
-            width: 100%;
-            background-color: #111827;
-            border: 1px solid #374151;
-            color: white;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            outline: none;
-            transition: all 0.2s;
-            -webkit-appearance: none;
-        }
-        .input-field:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-        }
-        /* Clase especial para inputs de dinero */
-        .money-input {
-            letter-spacing: 0.5px;
-        }
-
-        .input-label {
-            position: absolute;
-            top: -0.6rem;
-            left: 0.8rem;
-            background-color: #000000;
-            padding: 0 0.4rem;
-            color: #9ca3af;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        /* Botones */
-        .btn-primary {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #000;
-            font-weight: 700;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-            transition: transform 0.1s;
-        }
-        .btn-primary:active { transform: scale(0.97); }
-
-        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 600; }
-        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; font-weight: 600; }
-        
-        /* Botón Flotante (FAB) */
-        .fab-menu {
-            position: absolute;
-            /* SUBIDO: Para que no choque con el botón + subido */
-            bottom: calc(9rem + var(--safe-bottom)); 
-            right: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            align-items: end;
-            z-index: 50;
-            pointer-events: none;
-        }
-        .fab-btn {
-            pointer-events: auto;
-            width: 3.5rem;
-            height: 3.5rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: all 0.2s;
-        }
-        .fab-btn:active { transform: scale(0.9); }
-        
-        /* Animaciones */
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Estilos de Impresión (PDF) */
-        @media print {
-            body { background: white; height: auto; display: block; overflow: visible; }
-            #app-container { max-width: none; height: auto; box-shadow: none; overflow: visible; border: none; }
-            body * { visibility: hidden; }
-            #printable-area, #printable-area * { visibility: visible; }
-            #printable-area { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; padding: 0; margin: 0; }
-            .no-print { display: none !important; }
-        }
-    </style>
+    <!-- Estilos Propios -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="app-container">
-
         <!-- VISTA: LOGIN -->
         <div id="view-login" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 hidden fade-in">
             <div class="w-full max-w-sm">
                 <div class="text-center mb-10">
-                    <div class="h-24 w-24 bg-gray-900 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-amber-500 shadow-2xl mx-auto mb-4 p-2">
-                        <!-- NUEVO LOGO -->
+                    <div class="logo-container mx-auto mb-4 p-2">
                         <img src="https://i.imgur.com/b8MWdC2.png" alt="AM Metalicas Logo" class="w-full h-full object-contain">
                     </div>
                     <h1 class="text-2xl font-bold text-white tracking-widest">AM METÁLICAS</h1>
@@ -193,16 +44,12 @@
                         <label class="input-label">Contraseña</label>
                         <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
                     </div>
-                    
                     <div id="login-error" class="hidden bg-red-900/50 border border-red-500 text-red-200 text-xs p-3 rounded text-center">
                         Credenciales incorrectas.
                     </div>
-
                     <button type="submit" class="w-full py-4 btn-primary rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2">
                         INGRESAR <i data-lucide="arrow-right" size="20"></i>
                     </button>
-                    
-                    <!-- Botón Demo -->
                     <button type="button" onclick="fillDemo()" class="w-full text-xs text-gray-600 hover:text-amber-500 mt-4 underline">
                         Autocompletar (Modo Demo)
                     </button>
@@ -213,8 +60,7 @@
         <!-- HEADER APP -->
         <header id="app-header" class="hidden bg-gray-900 border-b border-gray-800 p-4 pt-safe-top z-20 flex justify-between items-center h-16 shrink-0 no-print transition-all">
             <div class="flex items-center gap-3">
-                <div class="h-10 w-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg p-1">
-                     <!-- NUEVO LOGO PEQUEÑO -->
+                <div class="header-logo bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg p-1">
                     <img src="https://i.imgur.com/b8MWdC2.png" alt="AM Metalicas Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
@@ -227,39 +73,29 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <!-- MENÚ HAMBURGUESA -->
                 <div class="relative">
                     <button onclick="toggleBackupMenu()" class="text-gray-400 hover:text-white p-2 border border-gray-700 rounded-lg bg-gray-800/50">
                         <i data-lucide="menu" size="24"></i>
                     </button>
-                    <!-- Menú desplegable -->
                     <div id="backup-menu" class="hidden absolute right-0 top-14 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-1">
                         <div class="p-2 text-xs text-gray-500 uppercase font-bold tracking-wider border-b border-gray-700 mb-1">Acciones Rápidas</div>
-                        
-                        <!-- Opción Nuevo Proyecto en el menú -->
-                        <button onclick="navigateTo('new'); toggleBackupMenu()" class="flex items-center gap-3 p-3 hover:bg-emerald-500/10 hover:text-emerald-500 rounded-lg text-sm text-left w-full text-white font-medium transition-colors">
+                        <button onclick="navigateTo('new'); toggleBackupMenu()" class="menu-item hover:bg-emerald-500/10 hover:text-emerald-500 text-white">
                             <i data-lucide="plus-circle" size="18"></i> Nuevo Proyecto
                         </button>
-
-                        <button onclick="navigateTo('quote-builder'); toggleBackupMenu()" class="flex items-center gap-3 p-3 hover:bg-amber-500/10 hover:text-amber-500 rounded-lg text-sm text-left w-full text-white font-medium transition-colors">
+                        <button onclick="navigateTo('quote-builder'); toggleBackupMenu()" class="menu-item hover:bg-amber-500/10 hover:text-amber-500 text-white">
                             <i data-lucide="file-text" size="18"></i> Crear Cotización
                         </button>
-                        
                         <div class="my-1 border-t border-gray-700"></div>
-                        
-                        <button onclick="exportData()" class="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg text-sm text-left w-full text-gray-300">
+                        <button onclick="exportData()" class="menu-item hover:bg-gray-700 text-gray-300">
                             <i data-lucide="download" size="18"></i> Guardar Copia
                         </button>
-                        <button onclick="triggerImport()" class="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg text-sm text-left w-full text-gray-300">
+                        <button onclick="triggerImport()" class="menu-item hover:bg-gray-700 text-gray-300">
                             <i data-lucide="upload" size="18"></i> Restaurar Copia
                         </button>
-                        
                         <div class="my-1 border-t border-gray-700"></div>
-
-                        <button onclick="logout()" class="flex items-center gap-3 p-3 hover:bg-red-500/10 hover:text-red-500 rounded-lg text-sm text-left w-full text-red-400">
+                        <button onclick="logout()" class="menu-item hover:bg-red-500/10 hover:text-red-500 text-red-400">
                             <i data-lucide="log-out" size="18"></i> Cerrar Sesión
                         </button>
-
                         <input type="file" id="file-import" class="hidden" accept=".json" onchange="importData(this)">
                     </div>
                 </div>
@@ -268,10 +104,8 @@
 
         <!-- CONTENIDO PRINCIPAL -->
         <main id="app-content" class="hidden flex-1 overflow-y-auto no-scrollbar relative bg-black">
-            
             <!-- VISTA: HOME -->
-            <div id="view-home" class="p-4 pb-40 fade-in"> <!-- pb-40 para espacio extra abajo -->
-                
+            <div id="view-home" class="p-4 pb-40 fade-in">
                 <div class="grid grid-cols-2 gap-3 mb-6">
                     <div class="card col-span-2 bg-gradient-to-br from-gray-800 to-gray-900 p-4 shadow-xl">
                         <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Caja Real (En Mano)</span>
@@ -283,34 +117,27 @@
                             <span class="text-red-500 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">Gastos</span>
                         </div>
                     </div>
-
                     <div class="card p-4 border-l-4 border-l-red-500 bg-gray-900/50">
                         <span class="text-[10px] text-gray-400 uppercase">Por Cobrar</span>
                         <span class="text-lg font-bold text-red-400 mt-1 block" id="dash-receivable">$0</span>
                     </div>
-
                     <div class="card p-4 border-l-4 border-l-emerald-500 bg-gray-900/50">
                         <span class="text-[10px] text-gray-400 uppercase">Ventas Totales</span>
                         <span class="text-lg font-bold text-emerald-400 mt-1 block" id="dash-sales">$0</span>
                     </div>
                 </div>
-
                 <div class="flex justify-between items-end mb-4 px-1">
                     <h3 class="text-white font-bold text-lg">Proyectos Recientes</h3>
                     <span class="text-xs text-amber-500 font-medium" id="active-projects-count">0 Activos</span>
                 </div>
-
-                <div id="projects-list" class="space-y-4">
-                    <!-- Lista de proyectos renderizada vía JS -->
-                </div>
-                
-                <div class="h-32"></div> <!-- Espacio extra al final para asegurar que nada quede bajo el botón -->
+                <div id="projects-list" class="space-y-4"></div>
+                <div class="h-32"></div>
             </div>
 
-            <!-- VISTA: CREADOR DE COTIZACIONES -->
+            <!-- VISTA: CREADOR COTIZACIONES -->
             <div id="view-quote-builder" class="hidden min-h-full bg-black fade-in pb-32 p-4">
                 <div class="flex items-center gap-4 mb-6 sticky top-0 bg-black z-10 py-2">
-                    <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full active:bg-gray-800">
+                    <button onclick="goBack()" class="nav-back-btn">
                         <i data-lucide="arrow-left"></i>
                     </button>
                     <h2 class="text-xl font-bold text-white">Nueva Cotización</h2>
@@ -325,7 +152,7 @@
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-sm font-bold text-amber-500 uppercase">Items / Servicios</h3>
-                        <button onclick="addQuoteItem()" class="text-xs bg-gray-800 px-3 py-1 rounded text-white border border-gray-600 flex items-center gap-1 hover:bg-gray-700">
+                        <button onclick="addQuoteItem()" class="btn-small-action">
                             <i data-lucide="plus" size="12"></i> Agregar Item
                         </button>
                     </div>
@@ -343,13 +170,12 @@
             <!-- VISTA: DETALLE DE PROYECTO -->
             <div id="view-project" class="hidden min-h-full bg-gray-900 fade-in pb-40 absolute inset-0 z-30 overflow-y-auto no-scrollbar">
                 <div class="sticky top-0 bg-gray-900/95 backdrop-blur border-b border-gray-800 p-4 flex items-center gap-4 z-10 shadow-lg">
-                    <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 active:bg-gray-700 transition">
+                    <button onclick="goBack()" class="nav-back-btn">
                         <i data-lucide="arrow-left"></i>
                     </button>
                     <div class="flex-1 overflow-hidden">
                         <h2 class="font-bold text-lg truncate text-white" id="p-detail-name">Proyecto</h2>
                     </div>
-                    <!-- Botón Compartir Estado -->
                     <button id="share-project-btn" onclick="shareProjectStatus()" class="p-2 text-gray-400 hover:text-white mr-1">
                         <i data-lucide="share-2" size="20"></i>
                     </button>
@@ -381,12 +207,9 @@
                         </div>
                     </div>
 
-                    <!-- SECCIÓN DE NOTAS / MEDIDAS -->
                     <div class="mb-6">
                         <h3 class="text-sm font-bold text-amber-500 uppercase mb-2">Notas y Medidas</h3>
-                        <div class="bg-gray-800 p-3 rounded border border-gray-700 text-sm text-gray-300 whitespace-pre-wrap" id="pd-notes">
-                            Sin notas adicionales.
-                        </div>
+                        <div class="bg-gray-800 p-3 rounded border border-gray-700 text-sm text-gray-300 whitespace-pre-wrap" id="pd-notes">Sin notas adicionales.</div>
                     </div>
 
                     <div class="flex border-b border-gray-800 mb-4">
@@ -402,20 +225,18 @@
                             Eliminar Proyecto
                         </button>
                     </div>
-                    
-                    <div class="h-32"></div> <!-- Espacio extra para que no tape el botón flotante -->
+                    <div class="h-32"></div>
                 </div>
             </div>
 
             <!-- VISTA: NUEVO PROYECTO -->
             <div id="view-new" class="hidden p-6 fade-in h-full bg-black absolute inset-0 z-40 overflow-y-auto">
                 <div class="flex items-center gap-4 mb-6">
-                    <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full">
+                    <button onclick="goBack()" class="nav-back-btn">
                         <i data-lucide="arrow-left"></i>
                     </button>
                     <h2 class="text-2xl font-bold text-white">Nuevo Trabajo</h2>
                 </div>
-
                 <form id="form-new" class="space-y-6 pb-10">
                     <div class="input-group">
                         <label class="input-label">Nombre del Proyecto</label>
@@ -423,7 +244,6 @@
                     </div>
                     <div class="input-group">
                         <label class="input-label">Valor Total ($)</label>
-                        <!-- type="text" + inputmode="numeric" para controlar formato -->
                         <input type="text" id="new-budget" class="input-field text-amber-400 font-bold money-input" placeholder="0" required inputmode="numeric">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -436,28 +256,22 @@
                             <input type="tel" id="new-phone" class="input-field" placeholder="300...">
                         </div>
                     </div>
-                    
-                    <!-- NUEVO CAMPO: Notas / Medidas -->
                     <div class="input-group">
                         <label class="input-label">Notas / Medidas</label>
                         <textarea id="new-notes" class="input-field h-24" placeholder="Ej: Pintura anticorrosiva gris. Medidas: 3m x 5m..."></textarea>
                     </div>
-
                     <div class="flex gap-4 pt-4">
                         <button type="button" onclick="goBack()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold hover:bg-gray-700">Cancelar</button>
                         <button type="submit" class="flex-1 py-4 btn-primary rounded-xl text-black">CREAR</button>
                     </div>
                 </form>
             </div>
-
         </main>
 
-        <!-- AREA IMPRIMIBLE (COTIZACIÓN) -->
+        <!-- AREA IMPRIMIBLE -->
         <div id="printable-area" class="hidden bg-white text-black p-8 font-serif">
-            <!-- (Contenido de impresión sin cambios) -->
             <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
                 <div class="flex items-center gap-4">
-                     <!-- NUEVO LOGO IMPRIMIBLE -->
                      <img src="https://i.imgur.com/b8MWdC2.png" alt="AM Metalicas Logo" style="height: 5rem; width: auto; object-fit: contain;">
                      <div>
                          <h1 class="text-3xl font-bold tracking-wider">AM METÁLICAS</h1>
@@ -498,19 +312,16 @@
             </div>
         </div>
 
-        <!-- MENU FAB (Botones flotantes detalle proyecto) -->
+        <!-- MODALES Y FABs -->
         <div id="fab-menu" class="fab-menu hidden no-print absolute">
             <button onclick="openTransactionModal('expense')" class="fab-btn bg-red-600 text-white"><i data-lucide="minus"></i></button>
             <button onclick="openTransactionModal('income')" class="fab-btn bg-emerald-500 text-white"><i data-lucide="plus"></i></button>
         </div>
 
-        <!-- BOTON FAB HOME (Nuevo Proyecto) - SUBIDO SIGNIFICATIVAMENTE -->
-        <button id="fab-home" onclick="navigateTo('new')" class="absolute no-print hidden hover:scale-105 transition-transform active:scale-95" 
-            style="bottom: calc(5rem + env(safe-area-inset-bottom, 20px)); right: 1.5rem; width: 3.5rem; height: 3.5rem; border-radius: 9999px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 40;">
+        <button id="fab-home" onclick="navigateTo('new')" class="fab-home-btn hidden no-print">
             <i data-lucide="plus" size="32" color="black"></i>
         </button>
 
-        <!-- MODAL TRANSACCIONES -->
         <div id="modal-trans" class="absolute inset-0 bg-black/90 z-50 hidden flex items-end sm:items-center justify-center fade-in no-print">
             <div class="bg-gray-900 w-full rounded-t-2xl sm:rounded-2xl p-6 border-t border-gray-800 sm:border shadow-2xl max-w-sm">
                 <div class="flex justify-between items-center mb-6">
@@ -521,7 +332,6 @@
                     <input type="hidden" id="trans-type">
                     <div class="input-group">
                         <label class="input-label">Monto ($)</label>
-                        <!-- Input de texto para formato miles -->
                         <input type="text" id="trans-amount" class="input-field text-2xl font-bold money-input" placeholder="0" required inputmode="numeric">
                     </div>
                     <div class="input-group">
@@ -529,28 +339,22 @@
                         <input type="text" id="trans-desc" class="input-field" placeholder="Descripción" required>
                     </div>
                     <div id="cat-selector" class="grid grid-cols-3 gap-2 hidden">
-                         <label class="cursor-pointer">
-                             <input type="radio" name="trans-cat" value="material" class="peer hidden" checked>
-                             <div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-amber-600 peer-checked:text-black peer-checked:font-bold hover:bg-gray-700 transition">Material</div>
-                        </label>
-                         <label class="cursor-pointer">
-                             <input type="radio" name="trans-cat" value="labor" class="peer hidden">
-                             <div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-blue-600 peer-checked:text-white peer-checked:font-bold hover:bg-gray-700 transition">Mano Obra</div>
-                        </label>
-                         <label class="cursor-pointer">
-                             <input type="radio" name="trans-cat" value="transport" class="peer hidden">
-                             <div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-purple-600 peer-checked:text-white peer-checked:font-bold hover:bg-gray-700 transition">Transporte</div>
-                        </label>
+                        <!-- Selectores de categoría (igual que antes) -->
+                        <label class="cursor-pointer"><input type="radio" name="trans-cat" value="material" class="peer hidden" checked><div class="cat-chip peer-checked:bg-amber-600 peer-checked:text-black">Material</div></label>
+                        <label class="cursor-pointer"><input type="radio" name="trans-cat" value="labor" class="peer hidden"><div class="cat-chip peer-checked:bg-blue-600 peer-checked:text-white">Mano Obra</div></label>
+                        <label class="cursor-pointer"><input type="radio" name="trans-cat" value="transport" class="peer hidden"><div class="cat-chip peer-checked:bg-purple-600 peer-checked:text-white">Transporte</div></label>
                     </div>
                     <button type="submit" class="w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg" id="btn-save-trans">Guardar</button>
                 </form>
             </div>
         </div>
 
-    </div> 
+    </div>
     
+    <!-- Lógica de la App -->
+    <script src="script.js"></script>
     <script>
-        // Registrar Service Worker
+        // Registro del Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
@@ -558,567 +362,6 @@
                     .catch(err => console.log('SW falló', err));
             });
         }
-
-        // CONFIGURACIÓN LOCAL
-        const DB_KEY = 'AM_METALICAS_DB';
-        const AUTH_KEY = 'AM_METALICAS_AUTH';
-        
-        // CREDENCIALES
-        const ADMIN_USER = 'millerbaquero@ammetalicas.com';
-        const ADMIN_PASS = 'Miller2026/*';
-
-        let projects = [];
-        let currentProjectId = null;
-
-        // INICIALIZACIÓN
-        document.addEventListener('DOMContentLoaded', () => {
-            loadData(); 
-            setTimeout(() => lucide.createIcons(), 100);
-            document.getElementById('q-date').valueAsDate = new Date();
-            
-            // Inicializar Listeners para formato de dinero
-            initMoneyInputs();
-
-            // Inicializar Historial
-            if (window.history && window.history.state === null) {
-                window.history.replaceState({view: 'home'}, '', '');
-            }
-            checkAuth(); 
-        });
-
-        // --- MANEJO DE FORMATO DE DINERO (1.000.000) ---
-        function initMoneyInputs() {
-            // Delegación de eventos para inputs dinámicos y estáticos
-            document.body.addEventListener('input', function(e) {
-                if (e.target.classList.contains('money-input')) {
-                    formatCurrencyInput(e.target);
-                }
-            });
-        }
-
-        function formatCurrencyInput(input) {
-            // Eliminar todo lo que no sea número
-            let value = input.value.replace(/\D/g, '');
-            if (value === '') {
-                input.value = '';
-                return;
-            }
-            // Formatear con puntos de miles
-            input.value = new Intl.NumberFormat('es-CO').format(value);
-        }
-
-        // Función para obtener el número real (sin puntos) para guardar en DB
-        function parseMoneyInput(idOrElement) {
-            const el = typeof idOrElement === 'string' ? document.getElementById(idOrElement) : idOrElement;
-            const rawValue = el.value.replace(/\./g, '').replace(/,/g, ''); // Quitar puntos y comas
-            return parseFloat(rawValue) || 0;
-        }
-
-
-        // --- MANEJO DEL BOTÓN ATRÁS (Android) ---
-        window.addEventListener('popstate', (event) => {
-            const state = event.state;
-            if (state) {
-                if (state.view === 'home') {
-                    _internalShowView('home');
-                    currentProjectId = null;
-                } else if (state.view === 'project') {
-                    if(projects.length === 0) loadData();
-                    currentProjectId = state.id;
-                    _renderProjectDetails(state.id);
-                    _internalShowView('project');
-                } else if (state.view === 'new') {
-                    _internalShowView('new');
-                } else if (state.view === 'quote') {
-                    _internalShowView('quote-builder');
-                }
-            } else {
-                _internalShowView('home');
-            }
-        });
-
-        function navigateTo(viewId, params = {}) {
-            let state = { view: viewId, ...params };
-            if(viewId === 'quote-builder') state.view = 'quote';
-            window.history.pushState(state, '', '');
-            
-            if (viewId === 'home') {
-                currentProjectId = null;
-                renderHome();
-                _internalShowView('home');
-            } else if (viewId === 'new') {
-                _internalShowView('new');
-            } else if (viewId === 'quote-builder') {
-                _internalShowView('quote-builder');
-            }
-        }
-
-        function goBack() {
-            window.history.back();
-        }
-
-        // --- AUTENTICACIÓN ---
-
-        function checkAuth() {
-            const isLogged = localStorage.getItem(AUTH_KEY) === 'true';
-            if(isLogged) {
-                document.getElementById('view-login').classList.add('hidden');
-                document.getElementById('app-header').classList.remove('hidden');
-                document.getElementById('app-content').classList.remove('hidden');
-                if(history.state && history.state.view !== 'home') {
-                   renderHome();
-                   if(history.state.view === 'project') {
-                       _renderProjectDetails(history.state.id);
-                       _internalShowView('project');
-                   } else {
-                       window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
-                   }
-                } else {
-                   _internalShowView('home');
-                   renderHome();
-                }
-            } else {
-                document.getElementById('view-login').classList.remove('hidden');
-                document.getElementById('app-header').classList.add('hidden');
-                document.getElementById('app-content').classList.add('hidden');
-                // El botón FAB se maneja en _internalShowView
-            }
-        }
-
-        function fillDemo() {
-            document.getElementById('login-email').value = ADMIN_USER;
-            document.getElementById('login-password').value = ADMIN_PASS;
-        }
-
-        document.getElementById('form-login').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-            const errorEl = document.getElementById('login-error');
-
-            if (email === ADMIN_USER && pass === ADMIN_PASS) {
-                localStorage.setItem(AUTH_KEY, 'true');
-                errorEl.classList.add('hidden');
-                window.history.replaceState({view: 'home'}, '', ''); 
-                checkAuth();
-            } else {
-                errorEl.classList.remove('hidden');
-            }
-        });
-
-        function logout() {
-            if(confirm('¿Cerrar sesión?')) {
-                localStorage.removeItem(AUTH_KEY);
-                window.location.reload(); 
-            }
-        }
-
-        // --- SISTEMA DE DATOS ---
-
-        function loadData() {
-            const raw = localStorage.getItem(DB_KEY);
-            if (raw) {
-                try { projects = JSON.parse(raw); } catch(e) { projects = []; }
-            } else {
-                projects = [];
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem(DB_KEY, JSON.stringify(projects));
-            renderHome();
-            if (currentProjectId) _renderProjectDetails(currentProjectId);
-        }
-
-        // --- EXPORTAR E IMPORTAR ---
-        
-        function toggleBackupMenu() {
-            document.getElementById('backup-menu').classList.toggle('hidden');
-        }
-
-        function exportData() {
-            const dataStr = JSON.stringify(projects, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const date = new Date().toISOString().slice(0,10);
-            a.href = url;
-            a.download = `backup_am_metalicas_${date}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            toggleBackupMenu();
-        }
-
-        function triggerImport() { document.getElementById('file-import').click(); }
-
-        function importData(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const json = JSON.parse(e.target.result);
-                    if (confirm(`¿Restaurar copia? Se reemplazarán datos actuales.`)) {
-                        projects = json;
-                        saveData();
-                        alert('Datos restaurados.');
-                    }
-                } catch (error) { alert('Error archivo.'); }
-            };
-            reader.readAsText(file);
-            toggleBackupMenu();
-            input.value = '';
-        }
-
-        // --- NAVEGACIÓN VISUAL INTERNA ---
-
-        function _internalShowView(viewId) {
-            ['view-home', 'view-project', 'view-new', 'view-quote-builder'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            
-            const targetId = viewId === 'quote-builder' ? 'view-quote-builder' : `view-${viewId}`;
-            document.getElementById(targetId).classList.remove('hidden');
-            
-            const isHome = viewId === 'home';
-            const isProject = viewId === 'project';
-            
-            // FAB HOME (el botón flotante naranja)
-            const fabHome = document.getElementById('fab-home');
-            if (isHome) {
-                fabHome.style.display = 'flex'; // Usar style.display para forzar flex, la clase hidden a veces da problemas con la especificidad
-                fabHome.classList.remove('hidden');
-            } else {
-                fabHome.style.display = 'none';
-                fabHome.classList.add('hidden');
-            }
-
-            // FAB MENU (los botones de transacciones en el proyecto)
-            const fabMenu = document.getElementById('fab-menu');
-            if (isProject) {
-                fabMenu.classList.remove('hidden');
-            } else {
-                fabMenu.classList.add('hidden');
-            }
-            
-            if(!isProject) document.getElementById('app-content').scrollTop = 0;
-            
-            lucide.createIcons();
-        }
-
-        function goHome() { 
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                navigateTo('home');
-            }
-        }
-
-        // --- RENDERIZADO HOME ---
-
-        function renderHome() {
-            const list = document.getElementById('projects-list');
-            list.innerHTML = '';
-            let tSales=0, tCol=0, tSpent=0, tRec=0, active=0;
-
-            projects.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            projects.forEach(p => {
-                const trans = p.transactions || [];
-                const inc = trans.filter(t => t.type === 'income').reduce((s,t)=>s+t.amount,0);
-                const exp = trans.filter(t => t.type === 'expense').reduce((s,t)=>s+t.amount,0);
-                const pend = p.budget - inc;
-                
-                // Solo sumar si no está borrado (lógica futura) o archivado
-                tSales += p.budget; tCol += inc; tSpent += exp; tRec += Math.max(0, pend);
-                if(p.status === 'active') active++;
-
-                const el = document.createElement('div');
-                el.className = 'card p-4 active:bg-gray-800 transition cursor-pointer relative overflow-hidden group hover:border-gray-500';
-                
-                el.onclick = () => openProject(p.id); 
-                
-                // Color indicador: Verde=Pagado, Ambar=Deuda, Gris=Sin mov/Terminado
-                const stColor = p.status === 'completed' ? 'bg-blue-500' : (pend <= 0 ? 'bg-emerald-500' : (inc > 0 ? 'bg-amber-500' : 'bg-gray-600'));
-                
-                el.innerHTML = `
-                    <div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div>
-                    <div class="pl-3">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h4 class="font-bold text-white text-lg ${p.status === 'completed' ? 'line-through text-gray-500' : ''}">${p.name}</h4>
-                                <p class="text-xs text-gray-500">${p.client || 'Sin cliente'}</p>
-                            </div>
-                            <div class="text-right">
-                                <span class="block text-xs text-gray-500">Total</span>
-                                <span class="font-bold text-white">${formatMoney(p.budget)}</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-center mt-3 bg-black/40 p-2 rounded border border-gray-700/50">
-                            <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Abonado</p><p class="text-sm font-bold text-emerald-400">${formatMoney(inc)}</p></div>
-                             <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Gastado</p><p class="text-sm font-bold text-red-400">${formatMoney(exp)}</p></div>
-                            <div class="text-center w-1/3"><p class="text-[10px] text-gray-400">Por Cobrar</p><p class="text-sm font-bold ${pend>0?'text-amber-500':'text-gray-500'}">${formatMoney(pend)}</p></div>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(el);
-            });
-            
-            if(projects.length === 0) list.innerHTML = `<div class="text-center py-10 opacity-30"><i data-lucide="folder-open" class="mx-auto mb-2" size="48"></i><p>Sin proyectos</p></div>`;
-
-            document.getElementById('dash-cashflow').textContent = formatMoney(tCol - tSpent);
-            document.getElementById('dash-receivable').textContent = formatMoney(tRec);
-            document.getElementById('dash-sales').textContent = formatMoney(tSales);
-            document.getElementById('active-projects-count').textContent = `${active} Activos`;
-            lucide.createIcons();
-        }
-
-        // --- CREAR PROYECTO ---
-        document.getElementById('form-new').addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Usar parseMoneyInput para obtener el valor numérico limpio
-            const rawBudget = parseMoneyInput('new-budget');
-            
-            const newProject = {
-                id: Date.now(),
-                name: document.getElementById('new-name').value,
-                budget: rawBudget,
-                client: document.getElementById('new-client').value,
-                phone: document.getElementById('new-phone').value,
-                notes: document.getElementById('new-notes').value, // Guardar notas
-                date: new Date().toISOString(),
-                status: 'active',
-                transactions: []
-            };
-            projects.push(newProject);
-            saveData();
-            e.target.reset();
-            window.history.back();
-        });
-
-        // --- DETALLE PROYECTO ---
-
-        function openProject(id) {
-            currentProjectId = id;
-            window.history.pushState({ view: 'project', id: id }, '', '');
-            _renderProjectDetails(id);
-            _internalShowView('project');
-        }
-
-        function _renderProjectDetails(id) {
-            const p = projects.find(x => x.id === id);
-            if(!p) return; 
-            
-            document.getElementById('p-detail-name').textContent = p.name + (p.status === 'completed' ? ' (Terminado)' : '');
-            
-            // Mostrar Notas
-            const notesEl = document.getElementById('pd-notes');
-            notesEl.textContent = p.notes || "Sin notas adicionales.";
-
-            const wa = document.getElementById('whatsapp-link');
-            if(p.phone) {
-                let ph = p.phone.replace(/\D/g,'');
-                if(!ph.startsWith('57')) ph = '57'+ph;
-                wa.href = `https://wa.me/${ph}?text=Hola, sobre el proyecto ${p.name}...`;
-                wa.classList.remove('hidden');
-            } else wa.classList.add('hidden');
-
-            const trans = p.transactions || [];
-            const inc = trans.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-            const exp = trans.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-            const pend = p.budget - inc;
-            
-            document.getElementById('pd-budget').textContent = formatMoney(p.budget);
-            document.getElementById('pd-pending').textContent = formatMoney(pend);
-            
-            const percent = p.budget > 0 ? (inc/p.budget)*100 : 0;
-            document.getElementById('pd-percent').textContent = Math.round(percent) + '%';
-            document.getElementById('pd-bar-income').style.width = Math.min(percent, 100) + '%';
-
-            const list = document.getElementById('transactions-list');
-            list.innerHTML = '';
-            
-            const sortedTrans = [...trans].sort((a,b)=>new Date(b.date)-new Date(a.date));
-
-            if(sortedTrans.length === 0) list.innerHTML = `<p class="text-center text-gray-500 py-4 text-sm">Sin movimientos</p>`;
-
-            sortedTrans.forEach(t => {
-                const isInc = t.type === 'income';
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center bg-black/40 p-3 rounded border border-gray-700/50';
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 rounded-full ${isInc?'bg-emerald-500/20 text-emerald-500':'bg-red-500/20 text-red-500'}"><i data-lucide="${isInc?'arrow-down-left':'arrow-up-right'}" size="16"></i></div>
-                        <div><p class="text-white text-sm font-medium">${t.desc}</p><p class="text-[10px] text-gray-500 uppercase">${t.cat ? getCatLabel(t.cat) : 'Abono'} • ${new Date(t.date).toLocaleDateString()}</p></div>
-                    </div>
-                    <div class="text-right"><p class="font-bold ${isInc?'text-emerald-400':'text-white'}">${isInc?'+':'-'}${formatMoney(t.amount)}</p><button onclick="deleteTrans(${t.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button></div>
-                `;
-                list.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        // --- NUEVAS FUNCIONES DE ESTADO Y COMPARTIR ---
-        
-        function toggleProjectStatus() {
-            const p = projects.find(x => x.id === currentProjectId);
-            if(!p) return;
-            p.status = p.status === 'active' ? 'completed' : 'active';
-            saveData();
-            _renderProjectDetails(currentProjectId);
-        }
-
-        function shareProjectStatus() {
-            const p = projects.find(x => x.id === currentProjectId);
-            if(!p) return;
-            
-            const trans = p.transactions || [];
-            const inc = trans.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-            const pend = p.budget - inc;
-            
-            const text = `*ESTADO DE CUENTA - AM METÁLICAS*%0A%0A*Proyecto:* ${p.name}%0A*Total:* ${formatMoney(p.budget)}%0A*Abonado:* ${formatMoney(inc)}%0A*Saldo Pendiente:* ${formatMoney(pend)}%0A%0A_Generado automáticamente._`;
-            
-            // Intentar abrir WhatsApp
-            let url = `https://wa.me/?text=${text}`;
-            if(p.phone) {
-                 let ph = p.phone.replace(/\D/g,'');
-                 if(!ph.startsWith('57')) ph = '57'+ph;
-                 url = `https://wa.me/${ph}?text=${text}`;
-            }
-            window.open(url, '_blank');
-        }
-
-
-        // --- TRANSACCIONES ---
-
-        document.getElementById('form-trans').addEventListener('submit', (e) => {
-            e.preventDefault();
-            if(!currentProjectId) return;
-            const type = document.getElementById('trans-type').value;
-            // Usar parseMoneyInput
-            const rawAmount = parseMoneyInput('trans-amount');
-
-            const newTrans = {
-                id: Date.now(),
-                type,
-                amount: rawAmount,
-                desc: document.getElementById('trans-desc').value,
-                cat: type === 'expense' ? document.querySelector('input[name="trans-cat"]:checked').value : null,
-                date: new Date().toISOString()
-            };
-            const pIndex = projects.findIndex(x => x.id === currentProjectId);
-            if(pIndex > -1) {
-                projects[pIndex].transactions.push(newTrans);
-                saveData();
-                closeModal();
-                _renderProjectDetails(currentProjectId); 
-            }
-        });
-
-        function deleteTrans(transId) {
-            if(!confirm('¿Borrar este movimiento?')) return;
-            const pIndex = projects.findIndex(x => x.id === currentProjectId);
-            if(pIndex > -1) {
-                projects[pIndex].transactions = projects[pIndex].transactions.filter(t => t.id !== transId);
-                saveData();
-                _renderProjectDetails(currentProjectId);
-            }
-        }
-
-        function deleteCurrentProject() {
-            if(!confirm('¿ELIMINAR PROYECTO COMPLETAMENTE?')) return;
-            projects = projects.filter(x => x.id !== currentProjectId);
-            saveData();
-            window.history.back(); 
-        }
-
-        // --- COTIZADOR ---
-        let quoteItems = [];
-        
-        function addQuoteItem() {
-            quoteItems.push({ desc: '', qty: 1, price: 0 });
-            renderQuoteItems();
-        }
-        function removeQuoteItem(index) {
-            quoteItems.splice(index, 1);
-            renderQuoteItems();
-        }
-        function updateQuoteItem(index, field, value) {
-            quoteItems[index][field] = value;
-            calculateQuoteTotal();
-        }
-        function renderQuoteItems() {
-            const list = document.getElementById('quote-items-list');
-            list.innerHTML = '';
-            if(quoteItems.length === 0) quoteItems.push({desc: '', qty: 1, price: 0});
-            quoteItems.forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = 'bg-gray-800 p-3 rounded-lg border border-gray-700 relative';
-                // Input Price modificado para usar money-input y oninput inline
-                div.innerHTML = `
-                    <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1 hover:text-red-300"><i data-lucide="trash-2" size="16"></i></button>
-                    <div class="mb-2 pr-8">
-                        <input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500 transition-colors" placeholder="Descripción" value="${item.desc}" oninput="updateQuoteItem(${idx}, 'desc', this.value)">
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="w-1/3"><label class="text-[10px] text-gray-400 block">Cant.</label><input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center focus:border-amber-500 outline-none transition-colors" value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))"></div>
-                        <div class="w-2/3"><label class="text-[10px] text-gray-400 block">Valor Unitario</label>
-                            <input type="text" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none transition-colors money-input" 
-                            value="${new Intl.NumberFormat('es-CO').format(item.price)}" 
-                            placeholder="0" inputmode="numeric"
-                            oninput="formatCurrencyInput(this); updateQuoteItem(${idx}, 'price', parseMoneyInput(this))">
-                        </div>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-            lucide.createIcons();
-            calculateQuoteTotal();
-        }
-        function calculateQuoteTotal() {
-            const total = quoteItems.reduce((sum, item) => sum + ( (item.qty || 0) * (item.price || 0) ), 0);
-            document.getElementById('q-total-preview').textContent = formatMoney(total);
-            return total;
-        }
-        function generatePDF() {
-            const clientName = document.getElementById('q-client').value || 'Cliente General';
-            const dateVal = document.getElementById('q-date').value;
-            const total = calculateQuoteTotal();
-            document.getElementById('print-client').textContent = clientName;
-            document.getElementById('print-date').textContent = new Date(dateVal).toLocaleDateString();
-            document.getElementById('print-total').textContent = formatMoney(total);
-            const tbody = document.getElementById('print-items-body');
-            tbody.innerHTML = '';
-            quoteItems.forEach(item => {
-                const subtotal = (item.qty || 0) * (item.price || 0);
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-300';
-                tr.innerHTML = `<td class="p-2 text-center">${item.qty}</td><td class="p-2">${item.desc}</td><td class="p-2 text-right">${formatMoney(item.price)}</td><td class="p-2 text-right font-bold">${formatMoney(subtotal)}</td>`;
-                tbody.appendChild(tr);
-            });
-            window.print();
-        }
-
-        // --- UTILIDADES ---
-        function formatMoney(amount) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount); }
-        function getCatLabel(cat) { const map = { 'material': 'Material', 'labor': 'Mano Obra', 'transport': 'Transporte', 'misc': 'Varios' }; return map[cat] || cat; }
-        
-        // --- MODALES ---
-        function openTransactionModal(type) {
-            document.getElementById('trans-type').value = type;
-            document.getElementById('trans-amount').value = '';
-            document.getElementById('trans-desc').value = '';
-            const isInc = type === 'income';
-            document.getElementById('modal-title').textContent = isInc ? "Registrar Abono" : "Registrar Gasto";
-            document.getElementById('btn-save-trans').textContent = isInc ? "RECIBIR DINERO" : "REGISTRAR GASTO";
-            document.getElementById('btn-save-trans').className = `w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg ${isInc?'btn-success':'btn-danger'}`;
-            document.getElementById('cat-selector').classList.toggle('hidden', isInc);
-            document.getElementById('trans-amount').className = `input-field text-2xl font-bold money-input ${isInc?'text-emerald-400':'text-red-400'}`;
-            document.getElementById('modal-trans').classList.remove('hidden');
-            document.getElementById('trans-amount').focus();
-        }
-        function closeModal() { document.getElementById('modal-trans').classList.add('hidden'); }
-        document.getElementById('modal-trans').addEventListener('click', (e) => { if(e.target.id === 'modal-trans') closeModal(); });
-
     </script>
 </body>
 </html>
