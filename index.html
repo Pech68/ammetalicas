@@ -16,7 +16,7 @@
     <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- NUEVO: Para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <!-- Estilos Propios -->
@@ -339,7 +339,8 @@
                 <div id="preview-paper" class="bg-white text-black p-8 max-w-[800px] w-full shadow-2xl min-h-[500px] text-xs sm:text-sm origin-top transform scale-100 sm:scale-100"></div>
             </div>
             <div class="p-4 bg-gray-900 border-t border-gray-800 grid grid-cols-2 gap-4">
-                <button onclick="triggerPrint()" class="btn-primary py-3 rounded-xl flex justify-center items-center gap-2 font-bold text-black"><i data-lucide="printer"></i> IMPRIMIR</button>
+                <!-- BOTÓN ACTUALIZADO PARA IMPRIMIR/PDF -->
+                <button onclick="triggerPrint()" class="btn-primary py-3 rounded-xl flex justify-center items-center gap-2 font-bold text-black text-xs sm:text-sm"><i data-lucide="printer"></i> GUARDAR PDF / IMPRIMIR</button>
                 <button onclick="closePreviewModal()" class="bg-gray-800 border border-gray-700 text-white py-3 rounded-xl font-bold">Cerrar</button>
             </div>
         </div>
@@ -376,9 +377,6 @@
             </div>
         </div>
 
-        <!-- AREA IMPRIMIBLE -->
-        <div id="printable-area" class="hidden"></div>
-
         <!-- MODALES Y FABs -->
         <div id="fab-menu" class="fab-menu hidden no-print absolute">
             <button onclick="openTransactionModal('expense')" class="fab-btn bg-red-600 text-white"><i data-lucide="minus"></i></button>
@@ -409,6 +407,9 @@
         </div>
     </div>
     
+    <!-- AREA IMPRIMIBLE MOVIDA FUERA DEL CONTENEDOR PRINCIPAL -->
+    <div id="printable-area" class="hidden"></div>
+
     <script src="script.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
