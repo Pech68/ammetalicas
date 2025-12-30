@@ -28,16 +28,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initMoneyInputs();
 
-    // MEJORA NAVEGACIÓN: Asegurar historial para botón atrás
     if (!window.history.state) {
         window.history.replaceState({view: 'home'}, '', '');
     }
     
     checkAuth();
-    // FORZAR UI HOME: Para que el botón flotante aparezca de inicio
     if (localStorage.getItem(AUTH_KEY) === 'true') {
         _internalShowView('home');
     }
+
+    // LISTENER GLOBAL PARA CERRAR MENÚ AL DAR CLIC FUERA
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('backup-menu');
+        const btn = document.getElementById('btn-menu-toggle');
+        // Si el menú está abierto y el clic NO fue en el menú NI en el botón que lo abre...
+        if (menu && !menu.classList.contains('hidden')) {
+            if (!menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                menu.classList.add('hidden');
+            }
+        }
+    });
 });
 
 // --- SISTEMA DE DATOS ---
@@ -68,7 +78,6 @@ function saveFinanceData() {
 window.addEventListener('popstate', (event) => {
     const state = event.state;
     if (state) {
-        // Navegación interna segura
         if (state.view === 'home') _internalShowView('home');
         else if (state.view === 'project') { if(projects.length===0) loadData(); openProject(state.id, false); }
         else if (state.view === 'new') _internalShowView('new');
@@ -77,12 +86,12 @@ window.addEventListener('popstate', (event) => {
         else if (state.view === 'finance') renderFinanceView();
         else if (state.view === 'reports') renderReports();
         
-        // Cerrar modales si están abiertos al dar atrás
         closeFinanceModal();
         closeModal();
         closePreviewModal();
+        // Asegurar que el menú se cierre al navegar
+        document.getElementById('backup-menu')?.classList.add('hidden');
     } else {
-        // Si no hay estado (ej: carga inicial forzada), ir al home
         _internalShowView('home');
     }
 });
@@ -97,6 +106,9 @@ function navigateTo(viewId, params = {}) {
     else if (viewId === 'quotes-list') { renderQuotesList(); _internalShowView('quotes-list'); }
     else if (viewId === 'finance') { renderFinanceView(); _internalShowView('finance'); }
     else if (viewId === 'reports') { renderReports(); _internalShowView('reports'); }
+
+    // Cerrar menú automáticamente al navegar
+    document.getElementById('backup-menu')?.classList.add('hidden');
 }
 
 function goBack() { 
@@ -117,15 +129,13 @@ function _internalShowView(viewId) {
     const target = document.getElementById(`view-${viewId}`);
     if(target) target.classList.remove('hidden');
     
-    // Gestión de FABs (Botones Flotantes)
     const isHome = viewId === 'home';
     const isProject = viewId === 'project';
     
     const fabHome = document.getElementById('fab-home');
     if(fabHome) {
-        // Forzar visibilidad con flex o none
         fabHome.style.display = isHome ? 'flex' : 'none';
-        fabHome.classList.toggle('hidden', !isHome); // Asegurar que la clase hidden también se quite
+        fabHome.classList.toggle('hidden', !isHome);
     }
 
     const fabMenu = document.getElementById('fab-menu');
@@ -310,7 +320,7 @@ function renderHome() {
     if(window.lucide) lucide.createIcons();
 }
 
-// --- COTIZACIONES (DISEÑO MEJORADO) ---
+// --- COTIZACIONES ---
 function loadQuoteBuilder(id = null) {
     currentQuoteId = id;
     const statusBadge = document.getElementById('q-status-badge');
@@ -341,21 +351,18 @@ function renderQuoteItems() {
     list.innerHTML = '';
     quoteItems.forEach((item, idx) => {
         const div = document.createElement('div');
-        // DISEÑO PREMIUM: Tarjeta más limpia
         div.className = 'bg-gray-900 p-4 rounded-xl border border-gray-800 shadow-sm relative fade-in mb-3';
         div.innerHTML = `
             <div class="flex justify-between items-start mb-3">
                 <span class="bg-gray-800 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold">ITEM ${idx + 1}</span>
                 <button onclick="removeQuoteItem(${idx})" class="text-red-500/50 hover:text-red-500 p-1 transition"><i data-lucide="x" size="16"></i></button>
             </div>
-            
             <div class="mb-3">
                 <div class="flex items-center bg-black/50 border border-gray-700 rounded-lg px-3 py-2 focus-within:border-amber-500 transition-colors">
                     <i data-lucide="edit-3" size="14" class="text-gray-500 mr-2"></i>
                     <input type="text" class="bg-transparent text-white text-sm w-full outline-none placeholder-gray-600" placeholder="Descripción del trabajo..." value="${item.desc}" oninput="updateQuoteItem(${idx}, 'desc', this.value)">
                 </div>
             </div>
-
             <div class="flex gap-3">
                 <div class="w-1/3">
                     <div class="bg-black/50 border border-gray-700 rounded-lg p-2 text-center">
@@ -418,7 +425,7 @@ function renderQuotesList() {
 }
 function deleteQuote(id) { if(confirm("¿Eliminar?")) { quotes = quotes.filter(q => q.id !== id); saveQuotesData(); } }
 
-// --- IMPRESIÓN / VISTA PREVIA (SOLUCIÓN MÓVIL) ---
+// --- IMPRESIÓN / VISTA PREVIA MEJORADA ---
 function generateInvoiceHTML() {
     const clientName = document.getElementById('q-client').value || 'Cliente General';
     const dateVal = document.getElementById('q-date').value;
@@ -427,30 +434,94 @@ function generateInvoiceHTML() {
     quoteItems.forEach(item => {
         itemsRows += `<tr class="border-b border-gray-300"><td class="p-2 text-center">${item.qty}</td><td class="p-2">${item.desc}</td><td class="p-2 text-right">${formatMoney(item.price)}</td><td class="p-2 text-right font-bold">${formatMoney(item.qty*item.price)}</td></tr>`;
     });
-    return `<div class="font-serif"><div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6"><div class="flex items-center gap-4"><img src="https://i.imgur.com/b8MWdC2.png" alt="Logo" style="height: 4rem; width: auto; object-fit: contain;"><div><h1 class="text-2xl font-bold tracking-wider uppercase">AM METÁLICAS</h1><p class="text-xs text-gray-600">Soldadura y Estructuras</p><p class="text-xs text-gray-600">Cel: 300 000 0000</p></div></div><div class="text-right"><h2 class="text-xl font-bold text-gray-800">COTIZACIÓN</h2><p class="text-xs mt-1">Fecha: <span>${new Date(dateVal).toLocaleDateString()}</span></p></div></div><div class="mb-6"><p class="font-bold text-sm">Cliente:</p><p class="text-lg border-b border-dotted border-gray-400 pb-1">${clientName}</p></div><table class="w-full mb-6 border-collapse text-sm"><thead><tr class="bg-gray-100 border-b-2 border-black text-left"><th class="p-2 font-bold w-12">Cant.</th><th class="p-2 font-bold">Descripción</th><th class="p-2 font-bold text-right w-24">V. Unit</th><th class="p-2 font-bold text-right w-24">Total</th></tr></thead><tbody>${itemsRows}</tbody><tfoot><tr class="border-t-2 border-black"><td colspan="3" class="text-right p-3 font-bold text-lg">TOTAL:</td><td class="text-right p-3 font-bold text-lg">${formatMoney(total)}</td></tr></tfoot></table><div class="mt-8 text-center text-xs text-gray-500"><p>Validez: 15 días.</p><p class="mt-8 pt-4 border-t border-gray-300 w-1/2 mx-auto">Firma Autorizada</p><p class="mt-1 font-bold">AM METÁLICAS</p></div></div>`;
+    // SE USA UN ESTILO EN LÍNEA BASICO PARA GARANTIZAR QUE NO SE DESCUADRE
+    return `<div class="font-serif text-black" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+        <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
+            <div class="flex items-center gap-4">
+                <img src="https://i.imgur.com/b8MWdC2.png" alt="Logo" style="height: 4rem; width: auto; object-fit: contain;">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wider uppercase m-0 leading-none">AM METÁLICAS</h1>
+                    <p class="text-xs text-gray-600 m-0">Soldadura y Estructuras</p>
+                    <p class="text-xs text-gray-600 m-0">Cel: 300 000 0000</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <h2 class="text-xl font-bold text-gray-800 m-0">COTIZACIÓN</h2>
+                <p class="text-xs mt-1 m-0">Fecha: <span>${new Date(dateVal).toLocaleDateString()}</span></p>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <p class="font-bold text-sm m-0">Cliente:</p>
+            <p class="text-lg border-b border-dotted border-gray-400 pb-1 m-0">${clientName}</p>
+        </div>
+
+        <table class="w-full mb-6 border-collapse text-sm">
+            <thead>
+                <tr class="bg-gray-100 border-b-2 border-black text-left">
+                    <th class="p-2 font-bold w-12">Cant.</th>
+                    <th class="p-2 font-bold">Descripción</th>
+                    <th class="p-2 font-bold text-right w-24">V. Unit</th>
+                    <th class="p-2 font-bold text-right w-24">Total</th>
+                </tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+            <tfoot>
+                <tr class="border-t-2 border-black">
+                    <td colspan="3" class="text-right p-3 font-bold text-lg">TOTAL:</td>
+                    <td class="text-right p-3 font-bold text-lg">${formatMoney(total)}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="mt-8 text-center text-xs text-gray-500">
+            <p>Validez: 15 días.</p>
+            <p class="mt-10 pt-4 border-t border-gray-300 w-1/2 mx-auto">Firma Autorizada</p>
+            <p class="mt-1 font-bold">AM METÁLICAS</p>
+        </div>
+    </div>`;
 }
 
 function openPreviewModal() { 
     const paper = document.getElementById('preview-paper');
     paper.innerHTML = generateInvoiceHTML(); 
     
-    // LÓGICA DE ESCALADO MÓVIL (ZOOM OUT)
-    // El papel mide ~800px de ancho. Si la pantalla es menor, calculamos el factor de escala.
+    // --- CORRECCIÓN CRÍTICA DE ESCALADO ---
+    // 1. Forzar un ancho MÍNIMO de hoja de papel (aprox 700px es como una carta legible)
+    // Esto evita que el texto se "apile" o se vea mal acomodado.
+    const baseWidth = 700; 
+    paper.style.minWidth = `${baseWidth}px`;
+    paper.style.width = `${baseWidth}px`; // Fijo para que el layout interno sea estable
+
+    // 2. Calcular escala basada en el ancho de la pantalla del usuario vs el ancho de la hoja
     const screenWidth = window.innerWidth;
-    const paperWidth = 800; // Ancho base de la hoja
-    
-    if (screenWidth < paperWidth) {
-        // Dejar un margen de 20px a cada lado
-        const scale = (screenWidth - 40) / paperWidth;
+    const containerPadding = 32; // Un poco de margen visual
+    const availableWidth = screenWidth - containerPadding;
+
+    // Resetear transformaciones previas
+    paper.style.transform = 'none';
+    paper.style.transformOrigin = 'top left'; 
+    paper.parentElement.style.height = 'auto';
+    paper.parentElement.style.overflow = 'auto';
+
+    // Si la pantalla es más pequeña que la hoja (celulares)
+    if (availableWidth < baseWidth) {
+        const scale = availableWidth / baseWidth;
+        
+        // Aplicar Zoom Out
         paper.style.transform = `scale(${scale})`;
-        paper.style.transformOrigin = 'top center';
-        // Ajustar altura del contenedor para compensar el espacio vacío que deja el scale
-        paper.parentElement.style.height = `${(paper.offsetHeight * scale) + 50}px`;
-        paper.parentElement.style.overflow = 'hidden'; // Evitar scroll horizontal
+        
+        // Ajustar el contenedor padre para que no quede espacio vacío gigante abajo
+        // (El transform scale no afecta el flujo del DOM, así que hay que forzar la altura)
+        const scaledHeight = paper.offsetHeight * scale;
+        paper.parentElement.style.height = `${scaledHeight + 50}px`;
+        paper.parentElement.style.overflow = 'hidden'; // Ocultar scrollbars raros
+        
+        // Centrar un poco si sobra espacio lateralmente (opcional, aquí usamos top-left + margin auto en flex padre)
     } else {
-        paper.style.transform = 'none';
-        paper.parentElement.style.height = 'auto';
-        paper.parentElement.style.overflowY = 'auto';
+        // En PC se ve normal
+        paper.style.margin = '0 auto';
+        paper.style.transformOrigin = 'top center';
     }
 
     document.getElementById('modal-quote-preview').classList.remove('hidden'); 
@@ -458,23 +529,14 @@ function openPreviewModal() {
 
 function closePreviewModal() { document.getElementById('modal-quote-preview').classList.add('hidden'); }
 
-// FIX: Función mejorada para imprimir y guardar como PDF
 function triggerPrint() { 
     const content = document.getElementById('preview-paper').innerHTML; 
     const pa = document.getElementById('printable-area'); 
-    
-    // Copiar contenido
     pa.innerHTML = content; 
-    
-    // Hacer visible
     pa.style.display = 'block'; 
     pa.classList.remove('hidden');
-
-    // Pequeño retardo para asegurar que el navegador renderice el contenido antes de llamar al diálogo
     setTimeout(() => {
         window.print(); 
-        
-        // Ocultar de nuevo después de la acción
         setTimeout(() => { 
             pa.style.display = 'none'; 
             pa.classList.add('hidden');
@@ -567,7 +629,7 @@ function deleteTrans(tid) { if(!confirm("¿Borrar?")) return; const idx = projec
 function shareProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(!p) return; const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); window.open(`https://wa.me/?text=${encodeURIComponent(`*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(p.budget - inc)}`)}`, '_blank'); }
 function toggleProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(p) { p.status = p.status === 'active' ? 'completed' : 'active'; saveData(); alert(`Proyecto marcado como ${p.status === 'completed' ? 'TERMINADO' : 'ACTIVO'}`); } }
 
-// --- FUNCIONES DEL MENÚ (Copia de Seguridad y UI) ---
+// --- FUNCIONES DEL MENÚ ---
 function toggleBackupMenu() {
     const menu = document.getElementById('backup-menu');
     if (menu) {
