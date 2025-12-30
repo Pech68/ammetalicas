@@ -17,7 +17,7 @@ let currentQuoteId = null;
 let quoteItems = [];
 let cashflowChart = null;
 let expensesChart = null;
-let homeSearchTerm = ''; 
+let homeSearchTerm = '';
 let homeStatusFilter = 'all';
 
 // --- INICIALIZACIÓN ---
@@ -91,7 +91,7 @@ window.addEventListener('popstate', (event) => {
         else if (state.view === 'quotes-list') _internalShowView('quotes-list');
         else if (state.view === 'finance') renderFinanceView();
         else if (state.view === 'reports') renderReports();
-        else if (state.view === 'receivables') renderReceivables(); // Nueva vista
+        else if (state.view === 'receivables') renderReceivables();
         
         closeFinanceModal();
         closeModal();
@@ -126,7 +126,6 @@ function goBack() {
 }
 
 function _internalShowView(viewId) {
-    // Agregar 'view-receivables' a la lista
     const views = ['view-home', 'view-project', 'view-new', 'view-quote-builder', 'view-quotes-list', 'view-finance', 'view-reports', 'view-receivables'];
     views.forEach(id => {
         const el = document.getElementById(id);
@@ -162,13 +161,10 @@ function renderReceivables() {
     let totalDebt = 0;
     let debtors = [];
 
-    // Recorrer proyectos para buscar deudas
     projects.forEach(p => {
-        // Calcular ingresos del proyecto
         const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
         const pending = p.budget - inc;
         
-        // Si hay saldo pendiente (mayor a 100 pesos para evitar decimales raros)
         if (pending > 100) {
             totalDebt += pending;
             debtors.push({
@@ -184,26 +180,15 @@ function renderReceivables() {
         }
     });
 
-    // Actualizar total arriba
     totalEl.textContent = formatMoney(totalDebt);
-
-    // Ordenar: Los que deben más dinero primero
     debtors.sort((a,b) => b.pending - a.pending);
 
     if (debtors.length === 0) {
-        list.innerHTML = `
-            <div class="text-center opacity-40 py-12">
-                <i data-lucide="check-circle" class="mx-auto mb-3 text-emerald-500" size="48"></i>
-                <p class="text-white font-medium">¡Todo al día!</p>
-                <p class="text-xs text-gray-400">No tienes cobros pendientes.</p>
-            </div>
-        `;
+        list.innerHTML = `<div class="text-center opacity-40 py-12"><i data-lucide="check-circle" class="mx-auto mb-3 text-emerald-500" size="48"></i><p class="text-white font-medium">¡Todo al día!</p><p class="text-xs text-gray-400">No tienes cobros pendientes.</p></div>`;
     } else {
         debtors.forEach(d => {
             const el = document.createElement('div');
             el.className = 'bg-gray-800 p-4 rounded-xl border border-gray-700 relative group';
-            
-            // Botón de WhatsApp rápido para cobrar
             let waBtn = '';
             if(d.phone) {
                 let phone = d.phone.replace(/\D/g, '');
@@ -213,28 +198,10 @@ function renderReceivables() {
                     waBtn = `<a href="https://wa.me/${phone}?text=${encodeURIComponent(msg)}" target="_blank" class="absolute top-4 right-4 p-2 bg-emerald-600/20 text-emerald-500 rounded-full hover:bg-emerald-600 hover:text-white transition"><i data-lucide="message-circle" size="18"></i></a>`;
                 }
             }
-
-            el.innerHTML = `
-                <div onclick="openProject(${d.id})" class="cursor-pointer pr-10">
-                    <h4 class="font-bold text-white truncate">${d.client}</h4>
-                    <p class="text-xs text-gray-400 mb-2 truncate">${d.name}</p>
-                    <div class="flex justify-between items-end mt-2">
-                        <div>
-                            <span class="text-[10px] text-gray-500 block">Abonado</span>
-                            <span class="text-xs text-gray-300 font-mono">${formatMoney(d.paid)}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-[10px] text-red-400 block font-bold uppercase">Debe</span>
-                            <span class="text-lg text-red-400 font-bold font-mono leading-none">${formatMoney(d.pending)}</span>
-                        </div>
-                    </div>
-                </div>
-                ${waBtn}
-            `;
+            el.innerHTML = `<div onclick="openProject(${d.id})" class="cursor-pointer pr-10"><h4 class="font-bold text-white truncate">${d.client}</h4><p class="text-xs text-gray-400 mb-2 truncate">${d.name}</p><div class="flex justify-between items-end mt-2"><div><span class="text-[10px] text-gray-500 block">Abonado</span><span class="text-xs text-gray-300 font-mono">${formatMoney(d.paid)}</span></div><div class="text-right"><span class="text-[10px] text-red-400 block font-bold uppercase">Debe</span><span class="text-lg text-red-400 font-bold font-mono leading-none">${formatMoney(d.pending)}</span></div></div></div>${waBtn}`;
             list.appendChild(el);
         });
     }
-    
     if(window.lucide) lucide.createIcons();
 }
 
@@ -253,28 +220,13 @@ function renderFinanceView() {
     balanceEl.className = `text-3xl font-bold mt-1 ${balance >= 0 ? 'text-white' : 'text-red-500'}`;
 
     const sorted = [...finance].sort((a,b) => new Date(b.date) - new Date(a.date));
-    
     if(sorted.length === 0) list.innerHTML = `<p class="text-center text-gray-500 py-10">Sin movimientos registrados.</p>`;
 
     sorted.forEach(f => {
         const isInc = f.type === 'income';
         const el = document.createElement('div');
         el.className = 'bg-gray-900 p-3 rounded-xl border border-gray-800 flex justify-between items-center';
-        el.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="p-2 rounded-full ${isInc ? 'bg-emerald-900 text-emerald-400' : 'bg-red-900 text-red-400'}">
-                    <i data-lucide="${isInc ? 'arrow-down' : 'arrow-up'}" size="18"></i>
-                </div>
-                <div>
-                    <p class="text-white font-medium text-sm">${f.desc}</p>
-                    <p class="text-[10px] text-gray-500 uppercase">${getCatLabel(f.cat)} • ${new Date(f.date).toLocaleDateString()}</p>
-                </div>
-            </div>
-            <div class="text-right">
-                <p class="font-bold ${isInc ? 'text-emerald-400' : 'text-red-400'}">${isInc ? '+' : '-'}${formatMoney(f.amount)}</p>
-                <button onclick="deleteFinance(${f.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button>
-            </div>
-        `;
+        el.innerHTML = `<div class="flex items-center gap-3"><div class="p-2 rounded-full ${isInc ? 'bg-emerald-900 text-emerald-400' : 'bg-red-900 text-red-400'}"><i data-lucide="${isInc ? 'arrow-down' : 'arrow-up'}" size="18"></i></div><div><p class="text-white font-medium text-sm">${f.desc}</p><p class="text-[10px] text-gray-500 uppercase">${getCatLabel(f.cat)} • ${new Date(f.date).toLocaleDateString()}</p></div></div><div class="text-right"><p class="font-bold ${isInc ? 'text-emerald-400' : 'text-red-400'}">${isInc ? '+' : '-'}${formatMoney(f.amount)}</p><button onclick="deleteFinance(${f.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button></div>`;
         list.appendChild(el);
     });
     if(window.lucide) lucide.createIcons();
@@ -310,11 +262,7 @@ if (formFinance) {
     };
 }
 
-function deleteFinance(id) {
-    if(!confirm("¿Borrar registro?")) return;
-    finance = finance.filter(f => f.id !== id);
-    saveFinanceData();
-}
+function deleteFinance(id) { if(!confirm("¿Borrar registro?")) return; finance = finance.filter(f => f.id !== id); saveFinanceData(); }
 
 // --- REPORTES IA & CHART.JS ---
 function renderReports() {
@@ -373,7 +321,7 @@ function generateAIInsight(inc, exp, projExp, persExp) {
     el.innerHTML = msg;
 }
 
-// --- RENDERIZADO HOME (DASHBOARD MEJORADO) ---
+// --- RENDERIZADO HOME ---
 function renderHome() {
     let totalIn = 0; let totalOut = 0; let active = 0;
     projects.forEach(p => {
@@ -427,7 +375,6 @@ function renderHome() {
     renderRecentActivity();
 
     renderProjectsList();
-    
     if(window.lucide) lucide.createIcons();
 }
 
@@ -586,7 +533,6 @@ function generateInvoiceHTML() {
     quoteItems.forEach(item => {
         itemsRows += `<tr class="border-b border-gray-300"><td class="p-2 text-center">${item.qty}</td><td class="p-2">${item.desc}</td><td class="p-2 text-right">${formatMoney(item.price)}</td><td class="p-2 text-right font-bold">${formatMoney(item.qty*item.price)}</td></tr>`;
     });
-    // SE ACTUALIZAN LOS DATOS DE CONTACTO AQUÍ
     return `<div class="font-serif text-black" style="width: 100%; max-width: 100%; box-sizing: border-box;">
         <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
             <div class="flex items-center gap-4">
@@ -741,7 +687,7 @@ function _renderProjectDetails(id) {
     });
     if(window.lucide) lucide.createIcons();
 
-    // --- REEMPLAZO DE BOTONES PROFESIONALES (UX MEJORADA) ---
+    // --- CORRECCIÓN BOTONES (UX COMPACTA) ---
     // Buscamos o creamos el contenedor de acciones
     let actionsContainer = document.getElementById('project-actions-container');
     // Si existe (por renderizados anteriores), lo borramos para recrearlo limpio
@@ -750,24 +696,23 @@ function _renderProjectDetails(id) {
     // Crear nuevo contenedor al final
     actionsContainer = document.createElement('div');
     actionsContainer.id = 'project-actions-container';
-    actionsContainer.className = 'mt-8 pt-6 border-t border-gray-800';
+    // FIX: Cambiamos a 'flex' para diseño en fila, y ajustamos márgenes
+    actionsContainer.className = 'mt-6 pt-6 border-t border-gray-800 flex gap-3';
     
     const isCompleted = p.status === 'completed';
     const toggleBtnColor = isCompleted ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500';
     const toggleIcon = isCompleted ? 'refresh-cw' : 'check-circle';
     const toggleText = isCompleted ? 'ACTIVAR PROYECTO' : 'MARCAR TERMINADO';
     
+    // HTML compacto: Botón principal ancho + Botón eliminar cuadrado
     actionsContainer.innerHTML = `
-        <div class="flex flex-col gap-3">
-            <button onclick="toggleProjectStatus()" class="w-full py-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-3 ${toggleBtnColor} transition-transform active:scale-95">
-                <i data-lucide="${toggleIcon}" size="20"></i>
-                ${toggleText}
-            </button>
-            <button onclick="deleteCurrentProject()" class="w-full py-3 rounded-xl font-medium text-red-400 hover:text-red-300 hover:bg-red-900/20 border border-transparent hover:border-red-900/50 flex items-center justify-center gap-2 transition-colors">
-                <i data-lucide="trash-2" size="18"></i>
-                Eliminar Proyecto
-            </button>
-        </div>
+        <button onclick="toggleProjectStatus()" class="flex-1 py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 ${toggleBtnColor} text-sm transition-transform active:scale-95">
+            <i data-lucide="${toggleIcon}" size="18"></i>
+            ${toggleText}
+        </button>
+        <button onclick="deleteCurrentProject()" class="px-4 py-3 rounded-xl font-medium text-red-400 bg-red-900/10 border border-red-900/30 hover:bg-red-900/30 flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="trash-2" size="18"></i>
+        </button>
     `;
     
     // Insertamos al final del contenedor view-project > div.p-4
@@ -795,7 +740,7 @@ function closeModal() { document.getElementById('modal-trans').classList.add('hi
 document.getElementById('modal-trans').addEventListener('click', e => { if(e.target.id === 'modal-trans') closeModal(); });
 
 const formTrans = document.getElementById('form-trans');
-if(formTrans) {
+if (formTrans) {
     formTrans.onsubmit = (e) => {
         e.preventDefault();
         if(!currentProjectId) return;
