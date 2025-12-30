@@ -17,12 +17,22 @@ let currentQuoteId = null;
 let quoteItems = [];
 let cashflowChart = null;
 let expensesChart = null;
-let homeSearchTerm = ''; // Estado para el buscador
-let projectFilter = 'all'; // Estado para el filtro de proyectos (all, active, completed)
+let homeSearchTerm = ''; 
+let projectFilter = 'all';
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
+    
+    // --- FIX: CORRECCIÓN MENÚ HAMBURGUESA EN NUEVO PROYECTO ---
+    // Quitamos las clases que hacen que tape el header y agregamos las de flujo normal
+    const viewNew = document.getElementById('view-new');
+    if(viewNew) {
+        viewNew.classList.remove('absolute', 'inset-0', 'z-40', 'h-full', 'overflow-y-auto');
+        viewNew.classList.add('min-h-full', 'pb-32');
+    }
+    // -----------------------------------------------------------
+
     setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
     
     const dateInput = document.getElementById('q-date');
@@ -91,6 +101,7 @@ window.addEventListener('popstate', (event) => {
         else if (state.view === 'quotes-list') _internalShowView('quotes-list');
         else if (state.view === 'finance') renderFinanceView();
         else if (state.view === 'reports') renderReports();
+        else if (state.view === 'receivables') renderReceivables(); // Nuevo estado
         
         closeFinanceModal();
         closeModal();
@@ -111,6 +122,7 @@ function navigateTo(viewId, params = {}) {
     else if (viewId === 'quotes-list') { renderQuotesList(); _internalShowView('quotes-list'); }
     else if (viewId === 'finance') { renderFinanceView(); _internalShowView('finance'); }
     else if (viewId === 'reports') { renderReports(); _internalShowView('reports'); }
+    else if (viewId === 'receivables') { renderReceivables(); _internalShowView('receivables'); } // Nueva navegación
 
     document.getElementById('backup-menu')?.classList.add('hidden');
 }
@@ -124,7 +136,8 @@ function goBack() {
 }
 
 function _internalShowView(viewId) {
-    const views = ['view-home', 'view-project', 'view-new', 'view-quote-builder', 'view-quotes-list', 'view-finance', 'view-reports'];
+    // Agregamos 'view-receivables' a la lista de vistas
+    const views = ['view-home', 'view-project', 'view-new', 'view-quote-builder', 'view-quotes-list', 'view-finance', 'view-reports', 'view-receivables'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.classList.add('hidden');
@@ -146,6 +159,114 @@ function _internalShowView(viewId) {
     if(fabMenu) fabMenu.classList.toggle('hidden', !isProject);
     
     if(!isProject) document.getElementById('app-content').scrollTop = 0;
+    if(window.lucide) lucide.createIcons();
+}
+
+// --- LÓGICA CUENTAS POR COBRAR (NUEVO) ---
+function renderReceivables() {
+    _internalShowView('receivables');
+    const list = document.getElementById('receivables-list');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    // Inyectar Buscador si no existe
+    let searchContainer = document.getElementById('receivables-search-container');
+    if (!searchContainer) {
+        searchContainer = document.createElement('div');
+        searchContainer.id = 'receivables-search-container';
+        searchContainer.className = 'mb-4';
+        searchContainer.innerHTML = `
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-3 text-gray-500" size="18"></i>
+                <input type="text" id="receivables-search" class="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white outline-none focus:border-red-500 transition" placeholder="Buscar cliente por nombre...">
+            </div>
+        `;
+        list.parentElement.insertBefore(searchContainer, list);
+        
+        // Listener para búsqueda en tiempo real
+        document.getElementById('receivables-search').addEventListener('input', (e) => {
+             renderReceivablesList(e.target.value);
+        });
+    }
+
+    renderReceivablesList('');
+}
+
+function renderReceivablesList(searchTerm = '') {
+    const list = document.getElementById('receivables-list');
+    list.innerHTML = '';
+    const term = searchTerm.toLowerCase();
+
+    // Filtramos proyectos que tengan deuda pendiente (budget - income > 0)
+    const debtors = projects.filter(p => {
+        const income = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+        const debt = p.budget - income;
+        const matchesTerm = (p.name + p.client).toLowerCase().includes(term);
+        // Mostramos si hay deuda Y coincide con la búsqueda (incluso si el proyecto está terminado, si deben plata, deben aparecer)
+        return debt > 0 && matchesTerm; 
+    }).map(p => {
+        const income = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+        return { ...p, income, debt: p.budget - income };
+    });
+
+    // Calcular Total General de Deuda
+    const totalDebt = debtors.reduce((sum, p) => sum + p.debt, 0);
+    const totalEl = document.getElementById('receivables-total');
+    if(totalEl) totalEl.textContent = formatMoney(totalDebt);
+
+    // Ordenar: Los que más deben primero
+    debtors.sort((a,b) => b.debt - a.debt);
+
+    if(debtors.length === 0) {
+        list.innerHTML = `<p class="text-center text-gray-500 py-10">¡Todo al día! No hay cobros pendientes.</p>`;
+        return;
+    }
+
+    debtors.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'bg-gray-900 p-4 rounded-xl border-l-4 border-red-600 shadow-md mb-3';
+        
+        // Lógica Link WhatsApp de Cobro
+        let waHtml = '';
+        if(p.phone) {
+             let phone = p.phone.replace(/\D/g, '');
+             if(phone.length > 0) {
+                 if(!phone.startsWith('57') && phone.length === 10) phone = '57' + phone;
+                 const msg = `Hola ${p.client}, saludo cordial de AM Metálicas. Le escribo para recordarle el saldo pendiente de ${formatMoney(p.debt)} correspondiente al proyecto "${p.name}". Quedo atento, gracias.`;
+                 waHtml = `<a href="https://wa.me/${phone}?text=${encodeURIComponent(msg)}" target="_blank" class="p-2 bg-emerald-600/20 text-emerald-500 rounded-lg hover:bg-emerald-600 hover:text-white transition"><i data-lucide="message-circle" size="18"></i> Cobrar</a>`;
+             }
+        }
+
+        el.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="font-bold text-white text-lg">${p.client}</h4>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide">${p.name}</p>
+                </div>
+                <div class="flex gap-2 items-center">
+                    ${waHtml}
+                    <button onclick="openProject(${p.id})" class="p-2 bg-gray-800 text-gray-400 rounded-lg hover:bg-gray-700 hover:text-white transition"><i data-lucide="external-link" size="18"></i> Ver</button>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-end mt-4 bg-black/30 p-3 rounded-lg">
+                <div class="text-xs text-gray-500 space-y-1">
+                    <p>Acordado: <span class="text-gray-300 font-medium">${formatMoney(p.budget)}</span></p>
+                    <p>Pagado: <span class="text-emerald-500 font-medium">${formatMoney(p.income)}</span></p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[9px] text-red-400 uppercase font-bold tracking-wider">Falta por Pagar</span>
+                    <p class="text-xl font-bold text-red-500">${formatMoney(p.debt)}</p>
+                </div>
+            </div>
+            
+            <div class="w-full bg-gray-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                <!-- Barra de progreso: Verde lo pagado, Rojo (fondo) lo que falta -->
+                <div class="bg-emerald-500 h-full" style="width: ${(p.income/p.budget)*100}%"></div>
+            </div>
+        `;
+        list.appendChild(el);
+    });
     if(window.lucide) lucide.createIcons();
 }
 
@@ -304,7 +425,7 @@ function renderHome() {
 
     const listContainer = document.getElementById('projects-list');
     
-    // 3. INYECTAR HERRAMIENTAS DE INICIO (Buscador y Filtros corregidos)
+    // 3. INYECTAR HERRAMIENTAS DE INICIO
     let tools = document.getElementById('home-tools');
     if (!tools && listContainer) {
         tools = document.createElement('div');
@@ -323,30 +444,26 @@ function renderHome() {
         `;
         listContainer.parentNode.insertBefore(tools, listContainer);
         
-        // Listener para búsqueda en tiempo real
         document.getElementById('home-search').addEventListener('input', (e) => {
             homeSearchTerm = e.target.value.toLowerCase();
             renderProjectsList(); 
         });
     }
 
-    // 4. Renderizar la lista de proyectos (filtrada)
     renderProjectsList();
     
     if(window.lucide) lucide.createIcons();
 }
 
 function setHomeFilter(status) {
-    projectFilter = status; // Actualizamos el estado global
+    projectFilter = status;
     
-    // Actualizamos estilos de botones
     const map = {
         'all': 'filter-btn-all',
         'active': 'filter-btn-active',
         'completed': 'filter-btn-completed'
     };
     
-    // Resetear todos
     Object.values(map).forEach(id => {
         const btn = document.getElementById(id);
         if(btn) {
@@ -354,13 +471,12 @@ function setHomeFilter(status) {
         }
     });
 
-    // Activar el seleccionado
     const activeBtn = document.getElementById(map[status]);
     if(activeBtn) {
         activeBtn.className = "px-4 py-1.5 rounded-full bg-amber-600 border border-amber-600 text-xs text-black font-bold transition whitespace-nowrap";
     }
 
-    renderProjectsList(); // Redibujar lista
+    renderProjectsList();
 }
 
 function renderProjectsList() {
@@ -368,7 +484,6 @@ function renderProjectsList() {
     if(!list) return;
     list.innerHTML = '';
 
-    // Filtrar proyectos por Búsqueda Y Estado
     const filtered = projects.filter(p => {
         const matchText = (p.name + p.client).toLowerCase().includes(homeSearchTerm);
         let matchStatus = true;
@@ -401,7 +516,6 @@ function renderProjectsList() {
         
         const stColor = isCompleted ? 'bg-blue-600' : (pend <= 0 ? 'bg-emerald-500' : 'bg-amber-500');
         
-        // Estilos condicionales para "Terminados" (SIN tachado)
         const cardOpacity = isCompleted ? 'opacity-75' : 'opacity-100';
         const titleColor = isCompleted ? 'text-blue-300' : 'text-white';
         const iconHtml = isCompleted ? '<i data-lucide="check-circle" size="16" class="inline mr-1 text-blue-500"></i>' : '';
