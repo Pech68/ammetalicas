@@ -20,28 +20,31 @@ let expensesChart = null;
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Cargar datos de memoria
     loadData();
-    setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
     
+    // 2. Inicializar iconos y fechas
+    setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
     const dateInput = document.getElementById('q-date');
     if(dateInput) dateInput.valueAsDate = new Date();
-    
     initMoneyInputs();
 
+    // 3. Manejo de Historial
     if (!window.history.state) {
         window.history.replaceState({view: 'home'}, '', '');
     }
     
+    // 4. Verificar Autenticación y RENDERIZAR
     checkAuth();
     if (localStorage.getItem(AUTH_KEY) === 'true') {
+        renderHome(); // <--- ¡ESTO FALTABA! Forzar pintado de datos al iniciar
         _internalShowView('home');
     }
 
-    // LISTENER GLOBAL PARA CERRAR MENÚ AL DAR CLIC FUERA
+    // 5. Listener para cerrar menú al dar clic fuera
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('backup-menu');
         const btn = document.getElementById('btn-menu-toggle');
-        // Si el menú está abierto y el clic NO fue en el menú NI en el botón que lo abre...
         if (menu && !menu.classList.contains('hidden')) {
             if (!menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
                 menu.classList.add('hidden');
@@ -52,9 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- SISTEMA DE DATOS ---
 function loadData() {
-    projects = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
-    quotes = JSON.parse(localStorage.getItem(QUOTES_KEY) || '[]');
-    finance = JSON.parse(localStorage.getItem(FINANCE_KEY) || '[]');
+    try {
+        projects = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+        quotes = JSON.parse(localStorage.getItem(QUOTES_KEY) || '[]');
+        finance = JSON.parse(localStorage.getItem(FINANCE_KEY) || '[]');
+    } catch (e) {
+        console.error("Error cargando datos", e);
+        // Si hay error, iniciar vacíos para no romper la app
+        projects = []; quotes = []; finance = [];
+    }
 }
 
 function saveData() {
@@ -89,7 +98,6 @@ window.addEventListener('popstate', (event) => {
         closeFinanceModal();
         closeModal();
         closePreviewModal();
-        // Asegurar que el menú se cierre al navegar
         document.getElementById('backup-menu')?.classList.add('hidden');
     } else {
         _internalShowView('home');
@@ -107,7 +115,6 @@ function navigateTo(viewId, params = {}) {
     else if (viewId === 'finance') { renderFinanceView(); _internalShowView('finance'); }
     else if (viewId === 'reports') { renderReports(); _internalShowView('reports'); }
 
-    // Cerrar menú automáticamente al navegar
     document.getElementById('backup-menu')?.classList.add('hidden');
 }
 
@@ -202,7 +209,6 @@ function openFinanceModal(type) {
 
 function closeFinanceModal() { document.getElementById('modal-finance').classList.add('hidden'); }
 
-// FIX: Cambio de addEventListener a .onsubmit para evitar duplicados
 const formFinance = document.getElementById('form-finance');
 if (formFinance) {
     formFinance.onsubmit = (e) => {
