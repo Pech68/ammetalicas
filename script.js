@@ -488,7 +488,6 @@ function openPreviewModal() {
     
     // --- CORRECCIÓN CRÍTICA DE ESCALADO ---
     // 1. Forzar un ancho MÍNIMO de hoja de papel (aprox 700px es como una carta legible)
-    // Esto evita que el texto se "apile" o se vea mal acomodado.
     const baseWidth = 700; 
     paper.style.minWidth = `${baseWidth}px`;
     paper.style.width = `${baseWidth}px`; // Fijo para que el layout interno sea estable
@@ -500,7 +499,10 @@ function openPreviewModal() {
 
     // Resetear transformaciones previas
     paper.style.transform = 'none';
-    paper.style.transformOrigin = 'top left'; 
+    
+    // FIX IMPORTANTE: Anclaje al CENTRO superior para que no se mueva a la izquierda
+    paper.style.transformOrigin = 'top center'; 
+    
     paper.parentElement.style.height = 'auto';
     paper.parentElement.style.overflow = 'auto';
 
@@ -512,12 +514,9 @@ function openPreviewModal() {
         paper.style.transform = `scale(${scale})`;
         
         // Ajustar el contenedor padre para que no quede espacio vacío gigante abajo
-        // (El transform scale no afecta el flujo del DOM, así que hay que forzar la altura)
         const scaledHeight = paper.offsetHeight * scale;
         paper.parentElement.style.height = `${scaledHeight + 50}px`;
-        paper.parentElement.style.overflow = 'hidden'; // Ocultar scrollbars raros
-        
-        // Centrar un poco si sobra espacio lateralmente (opcional, aquí usamos top-left + margin auto en flex padre)
+        paper.parentElement.style.overflow = 'hidden'; 
     } else {
         // En PC se ve normal
         paper.style.margin = '0 auto';
