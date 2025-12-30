@@ -1,6 +1,8 @@
-const CACHE_NAME = 'am-metalicas-v1';
+const CACHE_NAME = 'am-metalicas-v2';
 const urlsToCache = [
   './index.html',
+  './style.css',
+  './script.js',
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest',
@@ -8,18 +10,12 @@ const urlsToCache = [
   'https://i.imgur.com/b8MWdC2.png'
 ];
 
-// Instalación del Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Archivos en caché');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
 });
 
-// Activación y limpieza de cachés antiguas
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -34,33 +30,10 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Estrategia de carga: Cache First, luego Network (para velocidad y offline)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Si está en caché, lo devolvemos
-        if (response) {
-          return response;
-        }
-        // Si no, hacemos la petición a la red
-        return fetch(event.request).then(
-          networkResponse => {
-            // Verificamos si la respuesta es válida
-            if(!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-              return networkResponse;
-            }
-
-            // Clonamos la respuesta para guardarla en caché para la próxima
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return networkResponse;
-          }
-        );
-      })
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
   );
 });
