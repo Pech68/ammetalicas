@@ -665,7 +665,8 @@ function generateInvoiceHTML() {
                 <div>
                     <h1 class="text-2xl font-bold tracking-wider uppercase m-0 leading-none">AM METÁLICAS</h1>
                     <p class="text-xs text-gray-600 m-0">Soldadura y Estructuras</p>
-                    <p class="text-xs text-gray-600 m-0">Cel: 300 000 0000</p>
+                    <p class="text-xs text-gray-600 m-0">Cel/WhatsApp: 304 210 7928</p>
+                    <p class="text-xs text-gray-600 m-0">Email: ammetalicas08@gmail.com</p>
                 </div>
             </div>
             <div class="text-right">
