@@ -20,28 +20,24 @@ let expensesChart = null;
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cargar datos de memoria
     loadData();
-    
-    // 2. Inicializar iconos y fechas
     setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
+    
     const dateInput = document.getElementById('q-date');
     if(dateInput) dateInput.valueAsDate = new Date();
+    
     initMoneyInputs();
 
-    // 3. Manejo de Historial
     if (!window.history.state) {
         window.history.replaceState({view: 'home'}, '', '');
     }
     
-    // 4. Verificar Autenticación y RENDERIZAR
     checkAuth();
     if (localStorage.getItem(AUTH_KEY) === 'true') {
-        renderHome(); // <--- ¡ESTO FALTABA! Forzar pintado de datos al iniciar
+        renderHome();
         _internalShowView('home');
     }
 
-    // 5. Listener para cerrar menú al dar clic fuera
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('backup-menu');
         const btn = document.getElementById('btn-menu-toggle');
@@ -61,7 +57,6 @@ function loadData() {
         finance = JSON.parse(localStorage.getItem(FINANCE_KEY) || '[]');
     } catch (e) {
         console.error("Error cargando datos", e);
-        // Si hay error, iniciar vacíos para no romper la app
         projects = []; quotes = []; finance = [];
     }
 }
@@ -444,7 +439,6 @@ function generateInvoiceHTML() {
     quoteItems.forEach(item => {
         itemsRows += `<tr class="border-b border-gray-300"><td class="p-2 text-center">${item.qty}</td><td class="p-2">${item.desc}</td><td class="p-2 text-right">${formatMoney(item.price)}</td><td class="p-2 text-right font-bold">${formatMoney(item.qty*item.price)}</td></tr>`;
     });
-    // SE USA UN ESTILO EN LÍNEA BASICO PARA GARANTIZAR QUE NO SE DESCUADRE
     return `<div class="font-serif text-black" style="width: 100%; max-width: 100%; box-sizing: border-box;">
         <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
             <div class="flex items-center gap-4">
@@ -496,39 +490,26 @@ function openPreviewModal() {
     const paper = document.getElementById('preview-paper');
     paper.innerHTML = generateInvoiceHTML(); 
     
-    // --- CORRECCIÓN CRÍTICA DE ESCALADO ---
-    // 1. Forzar un ancho MÍNIMO de hoja de papel (aprox 700px es como una carta legible)
     const baseWidth = 700; 
     paper.style.minWidth = `${baseWidth}px`;
-    paper.style.width = `${baseWidth}px`; // Fijo para que el layout interno sea estable
+    paper.style.width = `${baseWidth}px`;
 
-    // 2. Calcular escala basada en el ancho de la pantalla del usuario vs el ancho de la hoja
     const screenWidth = window.innerWidth;
-    const containerPadding = 32; // Un poco de margen visual
+    const containerPadding = 32;
     const availableWidth = screenWidth - containerPadding;
 
-    // Resetear transformaciones previas
     paper.style.transform = 'none';
-    
-    // FIX IMPORTANTE: Anclaje al CENTRO superior para que no se mueva a la izquierda
     paper.style.transformOrigin = 'top center'; 
-    
     paper.parentElement.style.height = 'auto';
     paper.parentElement.style.overflow = 'auto';
 
-    // Si la pantalla es más pequeña que la hoja (celulares)
     if (availableWidth < baseWidth) {
         const scale = availableWidth / baseWidth;
-        
-        // Aplicar Zoom Out
         paper.style.transform = `scale(${scale})`;
-        
-        // Ajustar el contenedor padre para que no quede espacio vacío gigante abajo
         const scaledHeight = paper.offsetHeight * scale;
         paper.parentElement.style.height = `${scaledHeight + 50}px`;
         paper.parentElement.style.overflow = 'hidden'; 
     } else {
-        // En PC se ve normal
         paper.style.margin = '0 auto';
         paper.style.transformOrigin = 'top center';
     }
@@ -553,7 +534,6 @@ function triggerPrint() {
     }, 100);
 }
 
-// ... Proyectos e Importar ...
 function renderQuoteSelector() {
     const selector = document.getElementById('new-import-quote');
     while(selector.options.length > 1) { selector.remove(1); }
@@ -570,7 +550,7 @@ function importQuoteToProject(qid) {
         document.getElementById('new-notes').value = notesText;
     }
 }
-// FIX: Cambio de addEventListener a .onsubmit para evitar duplicados en el Canvas
+
 const formNew = document.getElementById('form-new');
 if(formNew) {
     formNew.onsubmit = (e) => {
@@ -598,35 +578,94 @@ if(formNew) {
 }
 
 function openProject(id, pushState=true) { currentProjectId = id; if(pushState) window.history.pushState({ view: 'project', id: id }, '', ''); _renderProjectDetails(id); _internalShowView('project'); }
+
 function _renderProjectDetails(id) {
     const p = projects.find(x => x.id === id);
     if(!p) return;
     document.getElementById('p-detail-name').textContent = p.name;
     document.getElementById('pd-notes').textContent = p.notes || "Sin notas.";
+    
+    // Cálculos
     const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
     const pend = p.budget - inc;
     const percent = p.budget > 0 ? (inc/p.budget)*100 : 0;
+    
+    // NUEVO: Cálculos para estadísticas avanzadas
+    const expenses = (p.transactions||[]).filter(t=>t.type==='expense');
+    const totalExp = expenses.reduce((s,t)=>s+t.amount,0);
+    const profit = inc - totalExp; // Utilidad de caja (lo recibido menos lo gastado)
+    
+    // Breakdown de categorías
+    const cats = { material: 0, labor: 0, transport: 0 };
+    expenses.forEach(t => {
+        if(t.cat === 'material') cats.material += t.amount;
+        else if(t.cat === 'labor') cats.labor += t.amount;
+        else if(t.cat === 'transport') cats.transport += t.amount;
+    });
+
     document.getElementById('pd-budget').textContent = formatMoney(p.budget);
     document.getElementById('pd-pending').textContent = formatMoney(pend);
     document.getElementById('pd-percent').textContent = Math.round(percent) + '%';
     document.getElementById('pd-bar-income').style.width = Math.min(percent, 100) + '%';
     
-    // FIX: Actualizar enlace de WhatsApp para evitar recarga de página (href="#")
+    // WhatsApp logic
     const waLink = document.getElementById('whatsapp-link');
     if(waLink) {
          const msg = `*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(pend)}`;
-         
-         // Usar teléfono del cliente si existe, agregando 57 (Colombia)
          let phone = p.phone ? p.phone.replace(/\D/g, '') : '';
          if(phone.length > 0) {
-             if(!phone.startsWith('57') && phone.length === 10) {
-                 phone = '57' + phone;
-             }
+             if(!phone.startsWith('57') && phone.length === 10) phone = '57' + phone;
              waLink.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
          } else {
              waLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
          }
     }
+
+    // --- INYECCIÓN DEL TABLERO DE CONTROL (STATS) ---
+    // Buscamos o creamos el contenedor de estadísticas
+    let statsContainer = document.getElementById('project-stats-container');
+    if (!statsContainer) {
+        statsContainer = document.createElement('div');
+        statsContainer.id = 'project-stats-container';
+        statsContainer.className = 'mb-6 fade-in';
+        // Insertamos después de la tarjeta principal (que contiene pd-budget)
+        const budgetEl = document.getElementById('pd-budget');
+        if(budgetEl) {
+            const card = budgetEl.closest('.card');
+            if(card) card.insertAdjacentElement('afterend', statsContainer);
+        }
+    }
+
+    // Renderizamos el HTML del tablero
+    statsContainer.innerHTML = `
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="bg-red-900/20 border border-red-900/50 p-3 rounded-xl shadow-lg">
+                <p class="text-[10px] text-red-400 uppercase font-bold tracking-wider">Gastos Totales</p>
+                <p class="text-lg font-bold text-white mt-1">${formatMoney(totalExp)}</p>
+            </div>
+            <div class="bg-${profit >= 0 ? 'emerald' : 'orange'}-900/20 border border-${profit >= 0 ? 'emerald' : 'orange'}-900/50 p-3 rounded-xl shadow-lg">
+                <p class="text-[10px] text-${profit >= 0 ? 'emerald' : 'orange'}-400 uppercase font-bold tracking-wider">Utilidad en Caja</p>
+                <p class="text-lg font-bold text-white mt-1">${profit >= 0 ? '+' : ''}${formatMoney(profit)}</p>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg">
+            <p class="text-[10px] text-gray-400 uppercase font-bold mb-3 flex justify-between">
+                <span>Distribución de Gastos</span>
+                <span>${totalExp > 0 ? '100%' : '0%'}</span>
+            </p>
+            <div class="flex h-3 rounded-full overflow-hidden bg-gray-900 mb-3 border border-gray-700">
+                <div class="bg-amber-500" style="width: ${totalExp ? (cats.material/totalExp)*100 : 0}%"></div>
+                <div class="bg-blue-500" style="width: ${totalExp ? (cats.labor/totalExp)*100 : 0}%"></div>
+                <div class="bg-purple-500" style="width: ${totalExp ? (cats.transport/totalExp)*100 : 0}%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-400 font-medium">
+                <span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-amber-500"></div> Mat. ${totalExp ? Math.round((cats.material/totalExp)*100) : 0}%</span>
+                <span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-blue-500"></div> M.O. ${totalExp ? Math.round((cats.labor/totalExp)*100) : 0}%</span>
+                <span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-purple-500"></div> Trans. ${totalExp ? Math.round((cats.transport/totalExp)*100) : 0}%</span>
+            </div>
+        </div>
+    `;
 
     const list = document.getElementById('transactions-list'); list.innerHTML = '';
     const sortedT = [...(p.transactions||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -635,23 +674,85 @@ function _renderProjectDetails(id) {
         const isInc = t.type === 'income';
         const div = document.createElement('div');
         div.className = 'flex justify-between items-center bg-black/40 p-3 rounded border border-gray-700/50 mb-2';
-        div.innerHTML = `<div class="flex items-center gap-3"><div class="p-2 rounded-full ${isInc?'bg-emerald-500/20 text-emerald-500':'bg-red-500/20 text-red-500'}"><i data-lucide="${isInc?'arrow-down-left':'arrow-up-right'}" size="16"></i></div><div><p class="text-white text-sm font-medium">${t.desc}</p><p class="text-[10px] text-gray-500 uppercase">${new Date(t.date).toLocaleDateString()}</p></div></div><div class="text-right"><p class="font-bold ${isInc?'text-emerald-400':'text-white'}">${formatMoney(t.amount)}</p><button onclick="deleteTrans(${t.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button></div>`;
+        
+        // Mostrar etiqueta de categoría si es gasto
+        let catTag = '';
+        if (!isInc && t.cat) {
+            const catColors = { material: 'text-amber-500', labor: 'text-blue-500', transport: 'text-purple-500' };
+            const catNames = { material: 'Material', labor: 'Mano Obra', transport: 'Transporte' };
+            catTag = `<span class="text-[9px] uppercase font-bold ml-2 ${catColors[t.cat] || 'text-gray-500'} border border-gray-700 px-1 rounded bg-gray-800">${catNames[t.cat] || 'Gasto'}</span>`;
+        }
+
+        div.innerHTML = `<div class="flex items-center gap-3"><div class="p-2 rounded-full ${isInc?'bg-emerald-500/20 text-emerald-500':'bg-red-500/20 text-red-500'}"><i data-lucide="${isInc?'arrow-down-left':'arrow-up-right'}" size="16"></i></div><div><p class="text-white text-sm font-medium flex items-center">${t.desc} ${catTag}</p><p class="text-[10px] text-gray-500 uppercase">${new Date(t.date).toLocaleDateString()}</p></div></div><div class="text-right"><p class="font-bold ${isInc?'text-emerald-400':'text-white'}">${formatMoney(t.amount)}</p><button onclick="deleteTrans(${t.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button></div>`;
         list.appendChild(div);
     });
     if(window.lucide) lucide.createIcons();
 }
 
 function deleteCurrentProject() { if(!confirm("¿ELIMINAR PROYECTO?")) return; projects = projects.filter(x => x.id !== currentProjectId); saveData(); window.history.back(); }
+
+function fillDemo() { document.getElementById('login-email').value=ADMIN_USER; document.getElementById('login-password').value=ADMIN_PASS; }
+
+// LOGICA MEJORADA DEL MODAL DE TRANSACCIONES
+function openTransactionModal(type) { 
+    document.getElementById('trans-type').value = type; 
+    document.getElementById('trans-amount').value = ''; 
+    document.getElementById('trans-desc').value = ''; 
+    document.getElementById('modal-trans').classList.remove('hidden');
+    
+    // Mostrar/Ocultar selector de categorías solo si es GASTO
+    const catSelector = document.getElementById('cat-selector');
+    if (catSelector) {
+        if (type === 'expense') {
+            catSelector.classList.remove('hidden');
+        } else {
+            catSelector.classList.add('hidden');
+        }
+    }
+    
+    // Focus automático
+    setTimeout(() => {
+        document.getElementById('trans-amount').focus();
+    }, 100);
+}
+
+function closeModal() { document.getElementById('modal-trans').classList.add('hidden'); }
+document.getElementById('modal-trans').addEventListener('click', e => { if(e.target.id === 'modal-trans') closeModal(); });
+
 // FIX: Cambio de addEventListener a .onsubmit para evitar duplicados
 const formTrans = document.getElementById('form-trans');
 if(formTrans) {
     formTrans.onsubmit = (e) => {
         e.preventDefault();
         if(!currentProjectId) return;
+        
         const type = document.getElementById('trans-type').value;
-        const newTrans = { id: Date.now(), type, amount: parseMoneyInput('trans-amount'), desc: document.getElementById('trans-desc').value, date: new Date().toISOString() };
+        const amount = parseMoneyInput('trans-amount');
+        const desc = document.getElementById('trans-desc').value;
+        
+        // Capturar Categoría si es Gasto
+        let cat = null;
+        if (type === 'expense') {
+            const checkedCat = document.querySelector('input[name="trans-cat"]:checked');
+            if (checkedCat) cat = checkedCat.value;
+        }
+
+        const newTrans = { 
+            id: Date.now(), 
+            type, 
+            amount, 
+            desc, 
+            date: new Date().toISOString(),
+            cat: cat // Guardamos la categoría
+        };
+        
         const idx = projects.findIndex(x => x.id === currentProjectId);
-        if(idx > -1) { projects[idx].transactions.push(newTrans); saveData(); closeModal(); _renderProjectDetails(currentProjectId); }
+        if(idx > -1) { 
+            projects[idx].transactions.push(newTrans); 
+            saveData(); 
+            closeModal(); 
+            _renderProjectDetails(currentProjectId); 
+        }
     };
 }
 function deleteTrans(tid) { if(!confirm("¿Borrar?")) return; const idx = projects.findIndex(x => x.id === currentProjectId); if(idx > -1) { projects[idx].transactions = projects[idx].transactions.filter(t => t.id !== tid); saveData(); _renderProjectDetails(currentProjectId); } }
@@ -732,7 +833,3 @@ if(formLogin) {
     };
 }
 function logout() { localStorage.removeItem(AUTH_KEY); location.reload(); }
-function fillDemo() { document.getElementById('login-email').value=ADMIN_USER; document.getElementById('login-password').value=ADMIN_PASS; }
-function openTransactionModal(type) { document.getElementById('trans-type').value = type; document.getElementById('trans-amount').value = ''; document.getElementById('trans-desc').value = ''; document.getElementById('modal-trans').classList.remove('hidden'); }
-function closeModal() { document.getElementById('modal-trans').classList.add('hidden'); }
-document.getElementById('modal-trans').addEventListener('click', e => { if(e.target.id === 'modal-trans') closeModal(); });
