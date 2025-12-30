@@ -609,7 +609,17 @@ function _renderProjectDetails(id) {
     const waLink = document.getElementById('whatsapp-link');
     if(waLink) {
          const msg = `*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(pend)}`;
-         waLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+         
+         // Usar teléfono del cliente si existe, agregando 57 (Colombia)
+         let phone = p.phone ? p.phone.replace(/\D/g, '') : '';
+         if(phone.length > 0) {
+             if(!phone.startsWith('57') && phone.length === 10) {
+                 phone = '57' + phone;
+             }
+             waLink.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+         } else {
+             waLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+         }
     }
 
     const list = document.getElementById('transactions-list'); list.innerHTML = '';
