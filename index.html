@@ -117,7 +117,7 @@
             flex-direction: column;
             gap: 1rem;
             align-items: end;
-            z-index: 40;
+            z-index: 50; /* Z-index alto para evitar solapamientos */
             pointer-events: none;
         }
         .fab-btn {
@@ -201,7 +201,7 @@
         </div>
 
         <!-- HEADER APP -->
-        <header id="app-header" class="hidden bg-gray-900 border-b border-gray-800 p-4 pt-safe-top z-20 flex justify-between items-center h-16 shrink-0 no-print">
+        <header id="app-header" class="hidden bg-gray-900 border-b border-gray-800 p-4 pt-safe-top z-20 flex justify-between items-center h-16 shrink-0 no-print transition-all">
             <div class="flex items-center gap-3">
                 <div class="h-10 w-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg text-amber-500">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
@@ -214,22 +214,44 @@
                     </div>
                 </div>
             </div>
+            
             <div class="flex items-center gap-2">
-                 <button onclick="toggleBackupMenu()" class="text-gray-400 hover:text-white p-2 relative">
-                    <i data-lucide="settings" size="24"></i>
-                    <div id="backup-menu" class="hidden absolute right-0 top-12 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-2">
-                        <button onclick="exportData()" class="flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-xs text-left w-full text-white">
-                            <i data-lucide="download" size="14"></i> Guardar Copia
+                <!-- MENÚ HAMBURGUESA -->
+                <div class="relative">
+                    <button onclick="toggleBackupMenu()" class="text-gray-400 hover:text-white p-2 border border-gray-700 rounded-lg bg-gray-800/50">
+                        <i data-lucide="menu" size="24"></i>
+                    </button>
+                    <!-- Menú desplegable -->
+                    <div id="backup-menu" class="hidden absolute right-0 top-14 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-1">
+                        <div class="p-2 text-xs text-gray-500 uppercase font-bold tracking-wider border-b border-gray-700 mb-1">Acciones Rápidas</div>
+                        
+                        <!-- Opción Nuevo Proyecto en el menú -->
+                        <button onclick="navigateTo('new'); toggleBackupMenu()" class="flex items-center gap-3 p-3 hover:bg-emerald-500/10 hover:text-emerald-500 rounded-lg text-sm text-left w-full text-white font-medium transition-colors">
+                            <i data-lucide="plus-circle" size="18"></i> Nuevo Proyecto
                         </button>
-                        <button onclick="triggerImport()" class="flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-xs text-left w-full text-white">
-                            <i data-lucide="upload" size="14"></i> Restaurar Copia
+
+                        <button onclick="navigateTo('quote-builder'); toggleBackupMenu()" class="flex items-center gap-3 p-3 hover:bg-amber-500/10 hover:text-amber-500 rounded-lg text-sm text-left w-full text-white font-medium transition-colors">
+                            <i data-lucide="file-text" size="18"></i> Crear Cotización
                         </button>
+                        
+                        <div class="my-1 border-t border-gray-700"></div>
+                        
+                        <button onclick="exportData()" class="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg text-sm text-left w-full text-gray-300">
+                            <i data-lucide="download" size="18"></i> Guardar Copia
+                        </button>
+                        <button onclick="triggerImport()" class="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg text-sm text-left w-full text-gray-300">
+                            <i data-lucide="upload" size="18"></i> Restaurar Copia
+                        </button>
+                        
+                        <div class="my-1 border-t border-gray-700"></div>
+
+                        <button onclick="logout()" class="flex items-center gap-3 p-3 hover:bg-red-500/10 hover:text-red-500 rounded-lg text-sm text-left w-full text-red-400">
+                            <i data-lucide="log-out" size="18"></i> Cerrar Sesión
+                        </button>
+
                         <input type="file" id="file-import" class="hidden" accept=".json" onchange="importData(this)">
                     </div>
-                </button>
-                <button onclick="logout()" class="text-red-400 hover:text-red-300 p-2">
-                    <i data-lucide="log-out" size="24"></i>
-                </button>
+                </div>
             </div>
         </header>
 
@@ -240,7 +262,7 @@
             <div id="view-home" class="p-4 pb-32 fade-in">
                 
                 <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="card col-span-2 bg-gradient-to-br from-gray-800 to-gray-900 p-4">
+                    <div class="card col-span-2 bg-gradient-to-br from-gray-800 to-gray-900 p-4 shadow-xl">
                         <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Caja Real (En Mano)</span>
                         <div class="flex items-baseline gap-1 mt-1">
                             <span class="text-3xl font-bold text-white tracking-tight" id="dash-cashflow">$0</span>
@@ -251,29 +273,16 @@
                         </div>
                     </div>
 
-                    <div class="card p-4 border-l-4 border-l-red-500">
+                    <div class="card p-4 border-l-4 border-l-red-500 bg-gray-900/50">
                         <span class="text-[10px] text-gray-400 uppercase">Por Cobrar</span>
                         <span class="text-lg font-bold text-red-400 mt-1 block" id="dash-receivable">$0</span>
                     </div>
 
-                    <div class="card p-4 border-l-4 border-l-emerald-500">
+                    <div class="card p-4 border-l-4 border-l-emerald-500 bg-gray-900/50">
                         <span class="text-[10px] text-gray-400 uppercase">Ventas Totales</span>
                         <span class="text-lg font-bold text-emerald-400 mt-1 block" id="dash-sales">$0</span>
                     </div>
                 </div>
-
-                <button onclick="showView('quote-builder')" class="w-full mb-6 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl p-4 flex items-center justify-between group transition">
-                    <div class="flex items-center gap-4">
-                        <div class="bg-amber-500/20 p-3 rounded-full text-amber-500">
-                            <i data-lucide="file-text" size="24"></i>
-                        </div>
-                        <div class="text-left">
-                            <h3 class="font-bold text-white">Crear Cotización</h3>
-                            <p class="text-xs text-gray-400">Generar PDF para cliente</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-gray-500 group-hover:text-white"></i>
-                </button>
 
                 <div class="flex justify-between items-end mb-4 px-1">
                     <h3 class="text-white font-bold text-lg">Proyectos Recientes</h3>
@@ -284,13 +293,13 @@
                     <!-- Lista de proyectos renderizada vía JS -->
                 </div>
                 
-                <div class="h-20"></div>
+                <div class="h-24"></div> <!-- Espacio extra al final -->
             </div>
 
             <!-- VISTA: CREADOR DE COTIZACIONES -->
             <div id="view-quote-builder" class="hidden min-h-full bg-black fade-in pb-32 p-4">
-                <div class="flex items-center gap-4 mb-6">
-                    <button onclick="goHome()" class="p-2 -ml-2 text-gray-400 hover:text-white">
+                <div class="flex items-center gap-4 mb-6 sticky top-0 bg-black z-10 py-2">
+                    <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full active:bg-gray-800">
                         <i data-lucide="arrow-left"></i>
                     </button>
                     <h2 class="text-xl font-bold text-white">Nueva Cotización</h2>
@@ -315,15 +324,15 @@
                     <span class="text-gray-400">Total Estimado:</span>
                     <span class="text-2xl font-bold text-white" id="q-total-preview">$0</span>
                 </div>
-                <button onclick="generatePDF()" class="w-full py-4 btn-primary rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2">
+                <button onclick="generatePDF()" class="w-full py-4 btn-primary rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 mb-8">
                     <i data-lucide="printer"></i> Vista Previa / Imprimir
                 </button>
             </div>
 
             <!-- VISTA: DETALLE DE PROYECTO -->
             <div id="view-project" class="hidden min-h-full bg-gray-900 fade-in pb-24 absolute inset-0 z-30 overflow-y-auto no-scrollbar">
-                <div class="sticky top-0 bg-gray-900/95 backdrop-blur border-b border-gray-800 p-4 flex items-center gap-4 z-10">
-                    <button onclick="goHome()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800">
+                <div class="sticky top-0 bg-gray-900/95 backdrop-blur border-b border-gray-800 p-4 flex items-center gap-4 z-10 shadow-lg">
+                    <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 active:bg-gray-700 transition">
                         <i data-lucide="arrow-left"></i>
                     </button>
                     <div class="flex-1 overflow-hidden">
@@ -335,7 +344,7 @@
                 </div>
 
                 <div class="p-4">
-                    <div class="card p-5 mb-6 relative overflow-hidden bg-gray-800 border-gray-700">
+                    <div class="card p-5 mb-6 relative overflow-hidden bg-gray-800 border-gray-700 shadow-xl">
                          <div class="grid grid-cols-2 gap-6 text-center mb-4">
                             <div>
                                 <p class="text-xs text-gray-400 uppercase mb-1">Total</p>
@@ -372,7 +381,13 @@
 
             <!-- VISTA: NUEVO PROYECTO -->
             <div id="view-new" class="hidden p-6 fade-in h-full bg-black absolute inset-0 z-40">
-                <h2 class="text-2xl font-bold text-white mb-6">Nuevo Trabajo</h2>
+                <div class="flex items-center gap-4 mb-6">
+                    <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <h2 class="text-2xl font-bold text-white">Nuevo Trabajo</h2>
+                </div>
+
                 <form id="form-new" class="space-y-6">
                     <div class="input-group">
                         <label class="input-label">Nombre del Proyecto</label>
@@ -393,7 +408,7 @@
                         </div>
                     </div>
                     <div class="flex gap-4 pt-4">
-                        <button type="button" onclick="goHome()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold hover:bg-gray-700">Cancelar</button>
+                        <button type="button" onclick="goBack()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold hover:bg-gray-700">Cancelar</button>
                         <button type="submit" class="flex-1 py-4 btn-primary rounded-xl text-black">CREAR</button>
                     </div>
                 </form>
@@ -403,9 +418,9 @@
 
         <!-- AREA IMPRIMIBLE (COTIZACIÓN) -->
         <div id="printable-area" class="hidden bg-white text-black p-8 font-serif">
+            <!-- (Contenido de impresión sin cambios) -->
             <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
                 <div class="flex items-center gap-4">
-                    <!-- Logo SVG negro para impresión -->
                      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
                         <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
@@ -459,8 +474,8 @@
             <button onclick="openTransactionModal('income')" class="fab-btn bg-emerald-500 text-white"><i data-lucide="plus"></i></button>
         </div>
 
-        <!-- BOTON FAB HOME (Nuevo Proyecto) -->
-        <button id="fab-home" onclick="showView('new')" class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom,20px))] right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-xl z-30 no-print hidden hover:scale-105 transition">
+        <!-- BOTON FAB HOME (Nuevo Proyecto) - Z-INDEX AUMENTADO y POSICIÓN FIJA -->
+        <button id="fab-home" onclick="navigateTo('new')" class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom,20px))] right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-xl z-40 no-print hidden hover:scale-105 transition-transform active:scale-95">
             <i data-lucide="plus" size="32" color="black"></i>
         </button>
 
@@ -517,12 +532,63 @@
         // INICIALIZACIÓN
         document.addEventListener('DOMContentLoaded', () => {
             loadData(); 
-            // Esperar un poco para asegurar que Lucide cargó
             setTimeout(() => lucide.createIcons(), 100);
-            
             document.getElementById('q-date').valueAsDate = new Date();
-            checkAuth(); // Verificar si ya inició sesión
+            
+            // Inicializar Historial
+            if (window.history && window.history.state === null) {
+                window.history.replaceState({view: 'home'}, '', '');
+            }
+            checkAuth(); 
         });
+
+        // --- MANEJO DEL BOTÓN ATRÁS (Android) ---
+        window.addEventListener('popstate', (event) => {
+            const state = event.state;
+            if (state) {
+                if (state.view === 'home') {
+                    _internalShowView('home');
+                    currentProjectId = null;
+                } else if (state.view === 'project') {
+                    // Si recargamos la página o venimos de atrás, necesitamos asegurarnos de que los datos existan
+                    if(projects.length === 0) loadData();
+                    currentProjectId = state.id;
+                    _renderProjectDetails(state.id);
+                    _internalShowView('project');
+                } else if (state.view === 'new') {
+                    _internalShowView('new');
+                } else if (state.view === 'quote') {
+                    _internalShowView('quote-builder');
+                }
+            } else {
+                // Si no hay estado (ej: primera carga), asumimos home
+                _internalShowView('home');
+            }
+        });
+
+        function navigateTo(viewId, params = {}) {
+            let state = { view: viewId, ...params };
+            // Mapeo especial para coincidir con los IDs del DOM si es necesario
+            if(viewId === 'quote-builder') state.view = 'quote';
+            
+            // Push al historial
+            window.history.pushState(state, '', '');
+            
+            // Renderizar vista
+            if (viewId === 'home') {
+                currentProjectId = null;
+                renderHome();
+                _internalShowView('home');
+            } else if (viewId === 'new') {
+                _internalShowView('new');
+            } else if (viewId === 'quote-builder') {
+                _internalShowView('quote-builder');
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }
 
         // --- AUTENTICACIÓN ---
 
@@ -532,7 +598,22 @@
                 document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('app-header').classList.remove('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
-                showView('home');
+                // Si hay un estado guardado (ej: refresh en proyecto), usarlo, sino Home
+                if(history.state && history.state.view !== 'home') {
+                   // Dejar que el popstate o la lógica actual lo maneje, 
+                   // pero forzamos renderHome por si acaso
+                   renderHome();
+                   if(history.state.view === 'project') {
+                       _renderProjectDetails(history.state.id);
+                       _internalShowView('project');
+                   } else {
+                       // Disparar evento para manejar la vista actual
+                       window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+                   }
+                } else {
+                   _internalShowView('home');
+                   renderHome();
+                }
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
                 document.getElementById('app-header').classList.add('hidden');
@@ -541,7 +622,6 @@
             }
         }
 
-        // Función para demo rápido
         function fillDemo() {
             document.getElementById('login-email').value = ADMIN_USER;
             document.getElementById('login-password').value = ADMIN_PASS;
@@ -556,6 +636,7 @@
             if (email === ADMIN_USER && pass === ADMIN_PASS) {
                 localStorage.setItem(AUTH_KEY, 'true');
                 errorEl.classList.add('hidden');
+                window.history.replaceState({view: 'home'}, '', ''); // Reset history on login
                 checkAuth();
             } else {
                 errorEl.classList.remove('hidden');
@@ -565,33 +646,28 @@
         function logout() {
             if(confirm('¿Cerrar sesión?')) {
                 localStorage.removeItem(AUTH_KEY);
-                location.reload(); 
+                window.location.reload(); 
             }
         }
 
-        // --- SISTEMA DE DATOS (LocalStorage) ---
+        // --- SISTEMA DE DATOS ---
 
         function loadData() {
             const raw = localStorage.getItem(DB_KEY);
             if (raw) {
-                try {
-                    projects = JSON.parse(raw);
-                } catch(e) {
-                    projects = [];
-                }
+                try { projects = JSON.parse(raw); } catch(e) { projects = []; }
             } else {
                 projects = [];
             }
-            renderHome();
         }
 
         function saveData() {
             localStorage.setItem(DB_KEY, JSON.stringify(projects));
             renderHome();
-            if (currentProjectId) openProject(currentProjectId);
+            if (currentProjectId) _renderProjectDetails(currentProjectId);
         }
 
-        // --- EXPORTAR E IMPORTAR (BACKUP) ---
+        // --- EXPORTAR E IMPORTAR ---
         
         function toggleBackupMenu() {
             document.getElementById('backup-menu').classList.toggle('hidden');
@@ -611,51 +687,57 @@
             toggleBackupMenu();
         }
 
-        function triggerImport() {
-            document.getElementById('file-import').click();
-        }
+        function triggerImport() { document.getElementById('file-import').click(); }
 
         function importData(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const json = JSON.parse(e.target.result);
-                    if (confirm(`¿Restaurar copia de seguridad? Se reemplazarán los datos actuales con ${json.length} proyectos.`)) {
+                    if (confirm(`¿Restaurar copia? Se reemplazarán datos actuales.`)) {
                         projects = json;
                         saveData();
-                        alert('Datos restaurados correctamente.');
+                        alert('Datos restaurados.');
                     }
-                } catch (error) {
-                    alert('Error: El archivo no es válido.');
-                }
+                } catch (error) { alert('Error archivo.'); }
             };
             reader.readAsText(file);
             toggleBackupMenu();
-            input.value = ''; // Resetear input
+            input.value = '';
         }
 
-        // --- NAVEGACIÓN ---
+        // --- NAVEGACIÓN VISUAL INTERNA ---
 
-        function showView(viewId) {
+        function _internalShowView(viewId) {
+            // Ocultar todo
             ['view-home', 'view-project', 'view-new', 'view-quote-builder'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            // Mostrar vista deseada
+            const targetId = viewId === 'quote-builder' ? 'view-quote-builder' : `view-${viewId}`;
+            document.getElementById(targetId).classList.remove('hidden');
             
             const isHome = viewId === 'home';
             const isProject = viewId === 'project';
             
+            // Manejo de botones flotantes
             document.getElementById('fab-home').classList.toggle('hidden', !isHome);
             document.getElementById('fab-menu').classList.toggle('hidden', !isProject);
             
-            if(isHome) renderHome();
+            // Scroll al top
+            if(!isProject) document.getElementById('app-content').scrollTop = 0;
+            
             lucide.createIcons();
         }
 
         function goHome() { 
-            currentProjectId = null;
-            showView('home'); 
+            // Si hay historial, volver atrás es mejor para mantener la pila lógica
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                navigateTo('home');
+            }
         }
 
         // --- RENDERIZADO HOME ---
@@ -665,7 +747,6 @@
             list.innerHTML = '';
             let tSales=0, tCol=0, tSpent=0, tRec=0, active=0;
 
-            // Ordenar: más recientes primero
             projects.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             projects.forEach(p => {
@@ -674,16 +755,15 @@
                 const exp = trans.filter(t => t.type === 'expense').reduce((s,t)=>s+t.amount,0);
                 const pend = p.budget - inc;
                 
-                tSales += p.budget; 
-                tCol += inc; 
-                tSpent += exp; 
-                tRec += Math.max(0, pend);
-                
+                tSales += p.budget; tCol += inc; tSpent += exp; tRec += Math.max(0, pend);
                 if(p.status === 'active') active++;
 
                 const el = document.createElement('div');
                 el.className = 'card p-4 active:bg-gray-800 transition cursor-pointer relative overflow-hidden group hover:border-gray-500';
-                el.onclick = () => openProject(p.id);
+                
+                // Usamos navigateTo en lugar de openProject directo para gestionar historial
+                el.onclick = () => openProject(p.id); 
+                
                 const stColor = pend <= 0 ? 'bg-emerald-500' : (inc > 0 ? 'bg-amber-500' : 'bg-gray-600');
                 
                 el.innerHTML = `
@@ -709,14 +789,12 @@
             document.getElementById('dash-receivable').textContent = formatMoney(tRec);
             document.getElementById('dash-sales').textContent = formatMoney(tSales);
             document.getElementById('active-projects-count').textContent = `${active} Activos`;
-            
             lucide.createIcons();
         }
 
         // --- CREAR PROYECTO ---
         document.getElementById('form-new').addEventListener('submit', (e) => {
             e.preventDefault();
-            
             const newProject = {
                 id: Date.now(),
                 name: document.getElementById('new-name').value,
@@ -727,19 +805,27 @@
                 status: 'active',
                 transactions: []
             };
-
             projects.push(newProject);
             saveData();
             e.target.reset();
-            goHome();
+            // Ir atrás (a home) usando historial para que sea fluido
+            window.history.back();
         });
 
         // --- DETALLE PROYECTO ---
 
         function openProject(id) {
+            // Push history y render
             currentProjectId = id;
+            window.history.pushState({ view: 'project', id: id }, '', '');
+            _renderProjectDetails(id);
+            _internalShowView('project');
+        }
+
+        // Función separada para renderizar sin navegar (usada por popstate)
+        function _renderProjectDetails(id) {
             const p = projects.find(x => x.id === id);
-            if(!p) return;
+            if(!p) return; // Si no existe (borrado), no hacer nada
             
             document.getElementById('p-detail-name').textContent = p.name;
             const wa = document.getElementById('whatsapp-link');
@@ -783,7 +869,6 @@
                 list.appendChild(div);
             });
             lucide.createIcons();
-            showView('project');
         }
 
         // --- TRANSACCIONES ---
@@ -791,7 +876,6 @@
         document.getElementById('form-trans').addEventListener('submit', (e) => {
             e.preventDefault();
             if(!currentProjectId) return;
-
             const type = document.getElementById('trans-type').value;
             const newTrans = {
                 id: Date.now(),
@@ -801,12 +885,12 @@
                 cat: type === 'expense' ? document.querySelector('input[name="trans-cat"]:checked').value : null,
                 date: new Date().toISOString()
             };
-
             const pIndex = projects.findIndex(x => x.id === currentProjectId);
             if(pIndex > -1) {
                 projects[pIndex].transactions.push(newTrans);
                 saveData();
                 closeModal();
+                _renderProjectDetails(currentProjectId); // Actualizar UI sin recargar
             }
         });
 
@@ -816,6 +900,7 @@
             if(pIndex > -1) {
                 projects[pIndex].transactions = projects[pIndex].transactions.filter(t => t.id !== transId);
                 saveData();
+                _renderProjectDetails(currentProjectId);
             }
         }
 
@@ -823,7 +908,7 @@
             if(!confirm('¿ELIMINAR PROYECTO COMPLETAMENTE?')) return;
             projects = projects.filter(x => x.id !== currentProjectId);
             saveData();
-            goHome();
+            window.history.back(); // Volver a home
         }
 
         // --- COTIZADOR ---
@@ -845,28 +930,17 @@
             const list = document.getElementById('quote-items-list');
             list.innerHTML = '';
             if(quoteItems.length === 0) quoteItems.push({desc: '', qty: 1, price: 0});
-
             quoteItems.forEach((item, idx) => {
                 const div = document.createElement('div');
                 div.className = 'bg-gray-800 p-3 rounded-lg border border-gray-700 relative';
                 div.innerHTML = `
                     <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1 hover:text-red-300"><i data-lucide="trash-2" size="16"></i></button>
                     <div class="mb-2 pr-8">
-                        <input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500 transition-colors" 
-                            placeholder="Descripción" value="${item.desc}" 
-                            oninput="updateQuoteItem(${idx}, 'desc', this.value)">
+                        <input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500 transition-colors" placeholder="Descripción" value="${item.desc}" oninput="updateQuoteItem(${idx}, 'desc', this.value)">
                     </div>
                     <div class="flex gap-3">
-                        <div class="w-1/3">
-                            <label class="text-[10px] text-gray-400 block">Cant.</label>
-                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center focus:border-amber-500 outline-none transition-colors" 
-                                value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))">
-                        </div>
-                        <div class="w-2/3">
-                            <label class="text-[10px] text-gray-400 block">Valor Unitario</label>
-                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none transition-colors" 
-                                value="${item.price}" placeholder="0" oninput="updateQuoteItem(${idx}, 'price', parseFloat(this.value))">
-                        </div>
+                        <div class="w-1/3"><label class="text-[10px] text-gray-400 block">Cant.</label><input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center focus:border-amber-500 outline-none transition-colors" value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))"></div>
+                        <div class="w-2/3"><label class="text-[10px] text-gray-400 block">Valor Unitario</label><input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none transition-colors" value="${item.price}" placeholder="0" oninput="updateQuoteItem(${idx}, 'price', parseFloat(this.value))"></div>
                     </div>
                 `;
                 list.appendChild(div);
