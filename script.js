@@ -17,7 +17,8 @@ let currentQuoteId = null;
 let quoteItems = [];
 let cashflowChart = null;
 let expensesChart = null;
-let homeSearchTerm = ''; // Estado para el buscador
+let homeSearchTerm = ''; 
+let homeStatusFilter = 'all';
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -90,6 +91,7 @@ window.addEventListener('popstate', (event) => {
         else if (state.view === 'quotes-list') _internalShowView('quotes-list');
         else if (state.view === 'finance') renderFinanceView();
         else if (state.view === 'reports') renderReports();
+        else if (state.view === 'receivables') renderReceivables(); // Nueva vista
         
         closeFinanceModal();
         closeModal();
@@ -110,6 +112,7 @@ function navigateTo(viewId, params = {}) {
     else if (viewId === 'quotes-list') { renderQuotesList(); _internalShowView('quotes-list'); }
     else if (viewId === 'finance') { renderFinanceView(); _internalShowView('finance'); }
     else if (viewId === 'reports') { renderReports(); _internalShowView('reports'); }
+    else if (viewId === 'receivables') { renderReceivables(); _internalShowView('receivables'); }
 
     document.getElementById('backup-menu')?.classList.add('hidden');
 }
@@ -123,7 +126,8 @@ function goBack() {
 }
 
 function _internalShowView(viewId) {
-    const views = ['view-home', 'view-project', 'view-new', 'view-quote-builder', 'view-quotes-list', 'view-finance', 'view-reports'];
+    // Agregar 'view-receivables' a la lista
+    const views = ['view-home', 'view-project', 'view-new', 'view-quote-builder', 'view-quotes-list', 'view-finance', 'view-reports', 'view-receivables'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.classList.add('hidden');
@@ -145,6 +149,92 @@ function _internalShowView(viewId) {
     if(fabMenu) fabMenu.classList.toggle('hidden', !isProject);
     
     if(!isProject) document.getElementById('app-content').scrollTop = 0;
+    if(window.lucide) lucide.createIcons();
+}
+
+// --- NUEVA LÓGICA: CUENTAS POR COBRAR (CARTERA) ---
+function renderReceivables() {
+    const list = document.getElementById('receivables-list');
+    const totalEl = document.getElementById('receivables-total');
+    if(!list || !totalEl) return;
+    
+    list.innerHTML = '';
+    let totalDebt = 0;
+    let debtors = [];
+
+    // Recorrer proyectos para buscar deudas
+    projects.forEach(p => {
+        // Calcular ingresos del proyecto
+        const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+        const pending = p.budget - inc;
+        
+        // Si hay saldo pendiente (mayor a 100 pesos para evitar decimales raros)
+        if (pending > 100) {
+            totalDebt += pending;
+            debtors.push({
+                id: p.id,
+                name: p.name,
+                client: p.client || 'Sin Cliente',
+                phone: p.phone || '',
+                total: p.budget,
+                paid: inc,
+                pending: pending,
+                status: p.status
+            });
+        }
+    });
+
+    // Actualizar total arriba
+    totalEl.textContent = formatMoney(totalDebt);
+
+    // Ordenar: Los que deben más dinero primero
+    debtors.sort((a,b) => b.pending - a.pending);
+
+    if (debtors.length === 0) {
+        list.innerHTML = `
+            <div class="text-center opacity-40 py-12">
+                <i data-lucide="check-circle" class="mx-auto mb-3 text-emerald-500" size="48"></i>
+                <p class="text-white font-medium">¡Todo al día!</p>
+                <p class="text-xs text-gray-400">No tienes cobros pendientes.</p>
+            </div>
+        `;
+    } else {
+        debtors.forEach(d => {
+            const el = document.createElement('div');
+            el.className = 'bg-gray-800 p-4 rounded-xl border border-gray-700 relative group';
+            
+            // Botón de WhatsApp rápido para cobrar
+            let waBtn = '';
+            if(d.phone) {
+                let phone = d.phone.replace(/\D/g, '');
+                if(phone.length > 0) {
+                    if(!phone.startsWith('57') && phone.length === 10) phone = '57' + phone;
+                    const msg = `Hola ${d.client}, te recuerdo el saldo pendiente de ${formatMoney(d.pending)} por el proyecto ${d.name}.`;
+                    waBtn = `<a href="https://wa.me/${phone}?text=${encodeURIComponent(msg)}" target="_blank" class="absolute top-4 right-4 p-2 bg-emerald-600/20 text-emerald-500 rounded-full hover:bg-emerald-600 hover:text-white transition"><i data-lucide="message-circle" size="18"></i></a>`;
+                }
+            }
+
+            el.innerHTML = `
+                <div onclick="openProject(${d.id})" class="cursor-pointer pr-10">
+                    <h4 class="font-bold text-white truncate">${d.client}</h4>
+                    <p class="text-xs text-gray-400 mb-2 truncate">${d.name}</p>
+                    <div class="flex justify-between items-end mt-2">
+                        <div>
+                            <span class="text-[10px] text-gray-500 block">Abonado</span>
+                            <span class="text-xs text-gray-300 font-mono">${formatMoney(d.paid)}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-red-400 block font-bold uppercase">Debe</span>
+                            <span class="text-lg text-red-400 font-bold font-mono leading-none">${formatMoney(d.pending)}</span>
+                        </div>
+                    </div>
+                </div>
+                ${waBtn}
+            `;
+            list.appendChild(el);
+        });
+    }
+    
     if(window.lucide) lucide.createIcons();
 }
 
@@ -285,7 +375,6 @@ function generateAIInsight(inc, exp, projExp, persExp) {
 
 // --- RENDERIZADO HOME (DASHBOARD MEJORADO) ---
 function renderHome() {
-    // 1. Calcular Totales Generales
     let totalIn = 0; let totalOut = 0; let active = 0;
     projects.forEach(p => {
         const pIn = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
@@ -295,7 +384,6 @@ function renderHome() {
     });
     finance.forEach(f => { if(f.type === 'income') totalIn += f.amount; if(f.type === 'expense') totalOut += f.amount; });
 
-    // 2. Actualizar UI de Tarjetas Superiores
     document.getElementById('dash-cashflow').textContent = formatMoney(totalIn - totalOut);
     document.getElementById('dash-total-in').textContent = formatMoney(totalIn);
     document.getElementById('dash-total-out').textContent = formatMoney(totalOut);
@@ -303,10 +391,7 @@ function renderHome() {
 
     const listContainer = document.getElementById('projects-list');
     
-    // 3. INYECTAR HERRAMIENTAS DE INICIO (Buscador y Actividad Reciente)
-    // Usamos insertBefore para colocarlos antes de la lista, sin romper la estructura HTML
-    
-    // A) BUSCADOR Y FILTROS
+    // UI: Buscador y Filtros
     let tools = document.getElementById('home-tools');
     if (!tools && listContainer) {
         tools = document.createElement('div');
@@ -318,21 +403,20 @@ function renderHome() {
                 <input type="text" id="home-search" class="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-10 pr-4 text-white outline-none focus:border-amber-500 transition" placeholder="Buscar proyecto o cliente...">
             </div>
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button onclick="setHomeFilter('all')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition whitespace-nowrap">Todos</button>
-                <button onclick="setHomeFilter('active')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-emerald-400 hover:bg-gray-700 transition whitespace-nowrap">En Proceso</button>
-                <button onclick="setHomeFilter('completed')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-blue-400 hover:bg-gray-700 transition whitespace-nowrap">Terminados</button>
+                <button id="filter-all" onclick="setHomeFilter('all')" class="px-4 py-1.5 rounded-full bg-amber-600 border border-amber-600 text-xs text-black font-bold hover:bg-amber-500 transition whitespace-nowrap">Todos</button>
+                <button id="filter-active" onclick="setHomeFilter('active')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition whitespace-nowrap">En Proceso</button>
+                <button id="filter-completed" onclick="setHomeFilter('completed')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition whitespace-nowrap">Terminados</button>
             </div>
         `;
         listContainer.parentNode.insertBefore(tools, listContainer);
         
-        // Listener para búsqueda en tiempo real
         document.getElementById('home-search').addEventListener('input', (e) => {
             homeSearchTerm = e.target.value.toLowerCase();
-            renderProjectsList(); // Solo redibujamos la lista, no todo el home
+            renderProjectsList();
         });
     }
 
-    // B) ACTIVIDAD RECIENTE (Últimos 3 movimientos)
+    // UI: Actividad Reciente
     let recent = document.getElementById('home-recent');
     if (!recent && listContainer) {
         recent = document.createElement('div');
@@ -340,122 +424,50 @@ function renderHome() {
         recent.className = 'mb-6 fade-in';
         listContainer.parentNode.insertBefore(recent, listContainer);
     }
-    renderRecentActivity(); // Llenar contenido de actividad
+    renderRecentActivity();
 
-    // 4. Renderizar la lista de proyectos (filtrada)
     renderProjectsList();
     
     if(window.lucide) lucide.createIcons();
 }
 
 function setHomeFilter(status) {
-    // Implementación simple de filtros por botón
-    const btns = document.querySelectorAll('#home-tools button');
-    btns.forEach(b => b.classList.remove('bg-amber-600', 'text-black', 'border-amber-600'));
-    // En una app más compleja, marcaríamos el activo. Aquí solo filtramos visualmente rápido.
-    // Para simplificar, recargamos la lista con un filtro global temporal si quisieras, 
-    // pero por ahora dejemos el buscador como principal herramienta.
-    // Si quieres que funcionen los botones, podemos añadir una variable global `homeStatusFilter`.
+    homeStatusFilter = status;
+    const map = { 'all': 'filter-all', 'active': 'filter-active', 'completed': 'filter-completed' };
+    Object.values(map).forEach(id => { const btn = document.getElementById(id); if(btn) { btn.className = "px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition whitespace-nowrap"; } });
+    const activeBtn = document.getElementById(map[status]); if(activeBtn) { activeBtn.className = "px-4 py-1.5 rounded-full bg-amber-600 border border-amber-600 text-xs text-black font-bold hover:bg-amber-500 transition whitespace-nowrap"; }
+    renderProjectsList();
 }
 
-// Nueva función para renderizar solo la "Actividad Reciente"
 function renderRecentActivity() {
     const container = document.getElementById('home-recent');
     if(!container) return;
-
-    // Recolectar TODOS los movimientos
     let allTrans = [];
-    
-    // De proyectos
-    projects.forEach(p => {
-        if(p.transactions) {
-            p.transactions.forEach(t => {
-                allTrans.push({ ...t, source: p.name, isProject: true });
-            });
-        }
-    });
-    
-    // De finanzas personales
-    finance.forEach(f => {
-        allTrans.push({ ...f, source: 'Gastos Varios', isProject: false });
-    });
-
-    // Ordenar por fecha (más reciente primero) y tomar 3
+    projects.forEach(p => { if(p.transactions) { p.transactions.forEach(t => { allTrans.push({ ...t, source: p.name, isProject: true }); }); } });
+    finance.forEach(f => { allTrans.push({ ...f, source: 'Gastos Varios', isProject: false }); });
     allTrans.sort((a,b) => new Date(b.date) - new Date(a.date));
     const last3 = allTrans.slice(0, 3);
-
-    if(last3.length === 0) {
-        container.innerHTML = ''; // Si no hay nada, no mostramos nada
-        return;
-    }
-
-    let html = `<h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-1">Actividad Reciente</h3>
-                <div class="space-y-2">`;
-    
+    if(last3.length === 0) { container.innerHTML = ''; return; }
+    let html = `<h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-1">Actividad Reciente</h3><div class="space-y-2">`;
     last3.forEach(t => {
-        const isInc = t.type === 'income';
-        const color = isInc ? 'text-emerald-400' : 'text-red-400';
-        const icon = isInc ? 'arrow-down-left' : 'arrow-up-right';
-        const bgIcon = isInc ? 'bg-emerald-500/10' : 'bg-red-500/10';
-        
-        html += `
-            <div class="bg-gray-900 border border-gray-800 p-2.5 rounded-lg flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="p-1.5 rounded-full ${bgIcon} ${color}">
-                        <i data-lucide="${icon}" size="14"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-white font-medium line-clamp-1">${t.desc || 'Movimiento'}</p>
-                        <p class="text-[10px] text-gray-500">${t.source} • ${new Date(t.date).toLocaleDateString()}</p>
-                    </div>
-                </div>
-                <span class="text-xs font-bold ${color}">${isInc?'+':'-'}${formatMoney(t.amount)}</span>
-            </div>
-        `;
+        const isInc = t.type === 'income'; const color = isInc ? 'text-emerald-400' : 'text-red-400'; const icon = isInc ? 'arrow-down-left' : 'arrow-up-right'; const bgIcon = isInc ? 'bg-emerald-500/10' : 'bg-red-500/10';
+        html += `<div class="bg-gray-900 border border-gray-800 p-2.5 rounded-lg flex items-center justify-between"><div class="flex items-center gap-3"><div class="p-1.5 rounded-full ${bgIcon} ${color}"><i data-lucide="${icon}" size="14"></i></div><div><p class="text-xs text-white font-medium line-clamp-1">${t.desc || 'Movimiento'}</p><p class="text-[10px] text-gray-500">${t.source} • ${new Date(t.date).toLocaleDateString()}</p></div></div><span class="text-xs font-bold ${color}">${isInc?'+':'-'}${formatMoney(t.amount)}</span></div>`;
     });
-    html += `</div>`;
-    container.innerHTML = html;
+    html += `</div>`; container.innerHTML = html;
 }
 
-// Nueva función separada para la lista de proyectos (permite filtrar sin redibujar todo)
 function renderProjectsList() {
     const list = document.getElementById('projects-list');
     if(!list) return;
     list.innerHTML = '';
-
-    // Filtrar proyectos
-    const filtered = projects.filter(p => {
-        const matchText = (p.name + p.client).toLowerCase().includes(homeSearchTerm);
-        return matchText;
-    });
-
+    const filtered = projects.filter(p => { const matchText = (p.name + p.client).toLowerCase().includes(homeSearchTerm); const matchStatus = homeStatusFilter === 'all' ? true : (homeStatusFilter === 'active' ? p.status === 'active' : p.status === 'completed'); return matchText && matchStatus; });
     const sorted = [...filtered].sort((a,b) => new Date(b.date) - new Date(a.date));
-
-    if(sorted.length === 0) {
-        list.innerHTML = `<div class="text-center opacity-30 py-10">
-            <i data-lucide="search-x" class="mx-auto mb-2" size="32"></i>
-            <p class="text-xs">No se encontraron proyectos</p>
-        </div>`;
-        if(window.lucide) lucide.createIcons();
-        return;
-    }
-
+    if(sorted.length === 0) { list.innerHTML = `<div class="text-center opacity-30 py-10"><i data-lucide="search-x" class="mx-auto mb-2" size="32"></i><p class="text-xs">No se encontraron proyectos</p></div>`; if(window.lucide) lucide.createIcons(); return; }
     sorted.forEach(p => {
-        const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-        const pend = p.budget - inc;
-        const el = document.createElement('div');
-        el.className = 'card p-4 relative overflow-hidden group hover:border-gray-500 cursor-pointer mb-3';
-        el.onclick = () => openProject(p.id);
-        const stColor = p.status === 'completed' ? 'bg-blue-600' : (pend <= 0 ? 'bg-emerald-500' : 'bg-amber-500');
-        el.innerHTML = `
-            <div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div>
-            <div class="pl-3">
-                <div class="flex justify-between">
-                    <div><h4 class="font-bold text-white ${p.status==='completed'?'line-through text-gray-500':''}">${p.name}</h4><p class="text-xs text-gray-500">${p.client||'--'}</p></div>
-                    <div class="text-right"><span class="text-xs text-gray-500">Total</span><br><span class="font-bold text-white">${formatMoney(p.budget)}</span></div>
-                </div>
-            </div>`;
-        list.appendChild(el);
+        const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); const pend = p.budget - inc;
+        const isCompleted = p.status === 'completed'; const stColor = isCompleted ? 'bg-blue-600' : (pend <= 0 ? 'bg-emerald-500' : 'bg-amber-500'); const borderColor = isCompleted ? 'border-blue-900/50 opacity-75' : 'hover:border-gray-500'; const statusBadge = isCompleted ? `<span class="bg-blue-900/50 text-blue-300 text-[10px] px-2 py-0.5 rounded border border-blue-800 font-bold uppercase tracking-wider">Terminado</span>` : '';
+        const el = document.createElement('div'); el.className = `card p-4 relative overflow-hidden group cursor-pointer mb-3 ${borderColor}`; el.onclick = () => openProject(p.id);
+        el.innerHTML = `<div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div><div class="pl-3"><div class="flex justify-between items-start"><div><div class="flex items-center gap-2 mb-1"><h4 class="font-bold text-white text-base">${p.name}</h4>${statusBadge}</div><p class="text-xs text-gray-500 flex items-center gap-1"><i data-lucide="user" size="10"></i> ${p.client||'Cliente General'}</p></div><div class="text-right"><span class="text-[10px] text-gray-500 uppercase">Total</span><br><span class="font-bold text-white">${formatMoney(p.budget)}</span></div></div></div>`; list.appendChild(el);
     });
     if(window.lucide) lucide.createIcons();
 }
@@ -565,7 +577,7 @@ function renderQuotesList() {
 }
 function deleteQuote(id) { if(confirm("¿Eliminar?")) { quotes = quotes.filter(q => q.id !== id); saveQuotesData(); } }
 
-// --- IMPRESIÓN / VISTA PREVIA MEJORADA ---
+// --- IMPRESIÓN ---
 function generateInvoiceHTML() {
     const clientName = document.getElementById('q-client').value || 'Cliente General';
     const dateVal = document.getElementById('q-date').value;
@@ -574,6 +586,7 @@ function generateInvoiceHTML() {
     quoteItems.forEach(item => {
         itemsRows += `<tr class="border-b border-gray-300"><td class="p-2 text-center">${item.qty}</td><td class="p-2">${item.desc}</td><td class="p-2 text-right">${formatMoney(item.price)}</td><td class="p-2 text-right font-bold">${formatMoney(item.qty*item.price)}</td></tr>`;
     });
+    // SE ACTUALIZAN LOS DATOS DE CONTACTO AQUÍ
     return `<div class="font-serif text-black" style="width: 100%; max-width: 100%; box-sizing: border-box;">
         <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
             <div class="flex items-center gap-4">
@@ -581,7 +594,8 @@ function generateInvoiceHTML() {
                 <div>
                     <h1 class="text-2xl font-bold tracking-wider uppercase m-0 leading-none">AM METÁLICAS</h1>
                     <p class="text-xs text-gray-600 m-0">Soldadura y Estructuras</p>
-                    <p class="text-xs text-gray-600 m-0">Cel: 300 000 0000</p>
+                    <p class="text-xs text-gray-600 m-0">Cel: 310 892 0784</p>
+                    <p class="text-xs text-gray-600 m-0">Email: ammetalicas08@gmail.com</p>
                 </div>
             </div>
             <div class="text-right">
@@ -589,102 +603,36 @@ function generateInvoiceHTML() {
                 <p class="text-xs mt-1 m-0">Fecha: <span>${new Date(dateVal).toLocaleDateString()}</span></p>
             </div>
         </div>
-        
-        <div class="mb-6">
-            <p class="font-bold text-sm m-0">Cliente:</p>
-            <p class="text-lg border-b border-dotted border-gray-400 pb-1 m-0">${clientName}</p>
-        </div>
-
-        <table class="w-full mb-6 border-collapse text-sm">
-            <thead>
-                <tr class="bg-gray-100 border-b-2 border-black text-left">
-                    <th class="p-2 font-bold w-12">Cant.</th>
-                    <th class="p-2 font-bold">Descripción</th>
-                    <th class="p-2 font-bold text-right w-24">V. Unit</th>
-                    <th class="p-2 font-bold text-right w-24">Total</th>
-                </tr>
-            </thead>
-            <tbody>${itemsRows}</tbody>
-            <tfoot>
-                <tr class="border-t-2 border-black">
-                    <td colspan="3" class="text-right p-3 font-bold text-lg">TOTAL:</td>
-                    <td class="text-right p-3 font-bold text-lg">${formatMoney(total)}</td>
-                </tr>
-            </tfoot>
-        </table>
-
-        <div class="mt-8 text-center text-xs text-gray-500">
-            <p>Validez: 15 días.</p>
-            <p class="mt-10 pt-4 border-t border-gray-300 w-1/2 mx-auto">Firma Autorizada</p>
-            <p class="mt-1 font-bold">AM METÁLICAS</p>
-        </div>
-    </div>`;
+        <div class="mb-6"><p class="font-bold text-sm m-0">Cliente:</p><p class="text-lg border-b border-dotted border-gray-400 pb-1 m-0">${clientName}</p></div>
+        <table class="w-full mb-6 border-collapse text-sm"><thead><tr class="bg-gray-100 border-b-2 border-black text-left"><th class="p-2 font-bold w-12">Cant.</th><th class="p-2 font-bold">Descripción</th><th class="p-2 font-bold text-right w-24">V. Unit</th><th class="p-2 font-bold text-right w-24">Total</th></tr></thead><tbody>${itemsRows}</tbody><tfoot><tr class="border-t-2 border-black"><td colspan="3" class="text-right p-3 font-bold text-lg">TOTAL:</td><td class="text-right p-3 font-bold text-lg">${formatMoney(total)}</td></tr></tfoot></table>
+        <div class="mt-8 text-center text-xs text-gray-500"><p>Validez: 15 días.</p><p class="mt-10 pt-4 border-t border-gray-300 w-1/2 mx-auto">Firma Autorizada</p><p class="mt-1 font-bold">AM METÁLICAS</p></div></div>`;
 }
 
 function openPreviewModal() { 
     const paper = document.getElementById('preview-paper');
     paper.innerHTML = generateInvoiceHTML(); 
-    
-    const baseWidth = 700; 
-    paper.style.minWidth = `${baseWidth}px`;
-    paper.style.width = `${baseWidth}px`;
-
+    const baseWidth = 700; paper.style.minWidth = `${baseWidth}px`; paper.style.width = `${baseWidth}px`;
     const screenWidth = window.innerWidth;
-    const containerPadding = 32;
-    const availableWidth = screenWidth - containerPadding;
-
-    paper.style.transform = 'none';
-    paper.style.transformOrigin = 'top center'; 
-    paper.parentElement.style.height = 'auto';
-    paper.parentElement.style.overflow = 'auto';
-
+    const availableWidth = screenWidth - 32;
+    paper.style.transform = 'none'; paper.style.transformOrigin = 'top center'; 
+    paper.parentElement.style.height = 'auto'; paper.parentElement.style.overflow = 'auto';
     if (availableWidth < baseWidth) {
         const scale = availableWidth / baseWidth;
         paper.style.transform = `scale(${scale})`;
-        const scaledHeight = paper.offsetHeight * scale;
-        paper.parentElement.style.height = `${scaledHeight + 50}px`;
+        paper.parentElement.style.height = `${(paper.offsetHeight * scale) + 50}px`;
         paper.parentElement.style.overflow = 'hidden'; 
-    } else {
-        paper.style.margin = '0 auto';
-        paper.style.transformOrigin = 'top center';
-    }
-
+    } else { paper.style.margin = '0 auto'; paper.style.transformOrigin = 'top center'; }
     document.getElementById('modal-quote-preview').classList.remove('hidden'); 
 }
-
 function closePreviewModal() { document.getElementById('modal-quote-preview').classList.add('hidden'); }
-
 function triggerPrint() { 
     const content = document.getElementById('preview-paper').innerHTML; 
-    const pa = document.getElementById('printable-area'); 
-    pa.innerHTML = content; 
-    pa.style.display = 'block'; 
-    pa.classList.remove('hidden');
-    setTimeout(() => {
-        window.print(); 
-        setTimeout(() => { 
-            pa.style.display = 'none'; 
-            pa.classList.add('hidden');
-        }, 1000); 
-    }, 100);
+    const pa = document.getElementById('printable-area'); pa.innerHTML = content; pa.style.display = 'block'; pa.classList.remove('hidden');
+    setTimeout(() => { window.print(); setTimeout(() => { pa.style.display = 'none'; pa.classList.add('hidden'); }, 1000); }, 100);
 }
 
-function renderQuoteSelector() {
-    const selector = document.getElementById('new-import-quote');
-    while(selector.options.length > 1) { selector.remove(1); }
-    quotes.forEach(q => { const option = document.createElement('option'); option.value = q.id; option.text = `${q.client} - ${formatMoney(q.total)}`; selector.add(option); });
-}
-function importQuoteToProject(qid) {
-    if(!qid) return;
-    const q = quotes.find(x => x.id == qid);
-    if(q) {
-        document.getElementById('new-client').value = q.client;
-        document.getElementById('new-budget').value = new Intl.NumberFormat('es-CO').format(q.total);
-        let notesText = "Base Cotización:\n";
-        q.items.forEach(i => { notesText += `- (${i.qty}) ${i.desc}\n`; });
-        document.getElementById('new-notes').value = notesText;
-    }
-}
+function renderQuoteSelector() { const selector = document.getElementById('new-import-quote'); while(selector.options.length > 1) { selector.remove(1); } quotes.forEach(q => { const option = document.createElement('option'); option.value = q.id; option.text = `${q.client} - ${formatMoney(q.total)}`; selector.add(option); }); }
+function importQuoteToProject(qid) { if(!qid) return; const q = quotes.find(x => x.id == qid); if(q) { document.getElementById('new-client').value = q.client; document.getElementById('new-budget').value = new Intl.NumberFormat('es-CO').format(q.total); let notesText = "Base Cotización:\n"; q.items.forEach(i => { notesText += `- (${i.qty}) ${i.desc}\n`; }); document.getElementById('new-notes').value = notesText; } }
 
 const formNew = document.getElementById('form-new');
 if(formNew) {
@@ -705,10 +653,7 @@ if(formNew) {
             transactions: []
         };
         if(quoteId) { const qIdx = quotes.findIndex(q => q.id == quoteId); if(qIdx > -1) { quotes[qIdx].status = 'converted'; saveQuotesData(); } }
-        projects.push(newProject);
-        saveData();
-        e.target.reset();
-        window.history.back();
+        projects.push(newProject); saveData(); e.target.reset(); window.history.back();
     };
 }
 
@@ -720,58 +665,38 @@ function _renderProjectDetails(id) {
     document.getElementById('p-detail-name').textContent = p.name;
     document.getElementById('pd-notes').textContent = p.notes || "Sin notas.";
     
-    // Cálculos
     const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
     const pend = p.budget - inc;
     const percent = p.budget > 0 ? (inc/p.budget)*100 : 0;
     
-    // NUEVO: Cálculos para estadísticas avanzadas
+    // Stats
     const expenses = (p.transactions||[]).filter(t=>t.type==='expense');
     const totalExp = expenses.reduce((s,t)=>s+t.amount,0);
-    const profit = inc - totalExp; // Utilidad de caja (lo recibido menos lo gastado)
-    
-    // Breakdown de categorías
+    const profit = inc - totalExp;
     const cats = { material: 0, labor: 0, transport: 0 };
-    expenses.forEach(t => {
-        if(t.cat === 'material') cats.material += t.amount;
-        else if(t.cat === 'labor') cats.labor += t.amount;
-        else if(t.cat === 'transport') cats.transport += t.amount;
-    });
+    expenses.forEach(t => { if(t.cat === 'material') cats.material += t.amount; else if(t.cat === 'labor') cats.labor += t.amount; else if(t.cat === 'transport') cats.transport += t.amount; });
 
     document.getElementById('pd-budget').textContent = formatMoney(p.budget);
     document.getElementById('pd-pending').textContent = formatMoney(pend);
     document.getElementById('pd-percent').textContent = Math.round(percent) + '%';
     document.getElementById('pd-bar-income').style.width = Math.min(percent, 100) + '%';
     
-    // WhatsApp logic
     const waLink = document.getElementById('whatsapp-link');
     if(waLink) {
          const msg = `*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(pend)}`;
          let phone = p.phone ? p.phone.replace(/\D/g, '') : '';
-         if(phone.length > 0) {
-             if(!phone.startsWith('57') && phone.length === 10) phone = '57' + phone;
-             waLink.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-         } else {
-             waLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-         }
+         if(phone.length > 0) { if(!phone.startsWith('57') && phone.length === 10) phone = '57' + phone; waLink.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`; } else { waLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`; }
     }
 
-    // --- INYECCIÓN DEL TABLERO DE CONTROL (STATS) ---
-    // Buscamos o creamos el contenedor de estadísticas
     let statsContainer = document.getElementById('project-stats-container');
     if (!statsContainer) {
         statsContainer = document.createElement('div');
         statsContainer.id = 'project-stats-container';
         statsContainer.className = 'mb-6 fade-in';
-        // Insertamos después de la tarjeta principal (que contiene pd-budget)
         const budgetEl = document.getElementById('pd-budget');
-        if(budgetEl) {
-            const card = budgetEl.closest('.card');
-            if(card) card.insertAdjacentElement('afterend', statsContainer);
-        }
+        if(budgetEl) { const card = budgetEl.closest('.card'); if(card) card.insertAdjacentElement('afterend', statsContainer); }
     }
 
-    // Renderizamos el HTML del tablero
     statsContainer.innerHTML = `
         <div class="grid grid-cols-2 gap-3 mb-3">
             <div class="bg-red-900/20 border border-red-900/50 p-3 rounded-xl shadow-lg">
@@ -783,12 +708,8 @@ function _renderProjectDetails(id) {
                 <p class="text-lg font-bold text-white mt-1">${profit >= 0 ? '+' : ''}${formatMoney(profit)}</p>
             </div>
         </div>
-        
         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg">
-            <p class="text-[10px] text-gray-400 uppercase font-bold mb-3 flex justify-between">
-                <span>Distribución de Gastos</span>
-                <span>${totalExp > 0 ? '100%' : '0%'}</span>
-            </p>
+            <p class="text-[10px] text-gray-400 uppercase font-bold mb-3 flex justify-between"><span>Distribución de Gastos</span><span>${totalExp > 0 ? '100%' : '0%'}</span></p>
             <div class="flex h-3 rounded-full overflow-hidden bg-gray-900 mb-3 border border-gray-700">
                 <div class="bg-amber-500" style="width: ${totalExp ? (cats.material/totalExp)*100 : 0}%"></div>
                 <div class="bg-blue-500" style="width: ${totalExp ? (cats.labor/totalExp)*100 : 0}%"></div>
@@ -809,162 +730,100 @@ function _renderProjectDetails(id) {
         const isInc = t.type === 'income';
         const div = document.createElement('div');
         div.className = 'flex justify-between items-center bg-black/40 p-3 rounded border border-gray-700/50 mb-2';
-        
-        // Mostrar etiqueta de categoría si es gasto
         let catTag = '';
         if (!isInc && t.cat) {
             const catColors = { material: 'text-amber-500', labor: 'text-blue-500', transport: 'text-purple-500' };
             const catNames = { material: 'Material', labor: 'Mano Obra', transport: 'Transporte' };
             catTag = `<span class="text-[9px] uppercase font-bold ml-2 ${catColors[t.cat] || 'text-gray-500'} border border-gray-700 px-1 rounded bg-gray-800">${catNames[t.cat] || 'Gasto'}</span>`;
         }
-
         div.innerHTML = `<div class="flex items-center gap-3"><div class="p-2 rounded-full ${isInc?'bg-emerald-500/20 text-emerald-500':'bg-red-500/20 text-red-500'}"><i data-lucide="${isInc?'arrow-down-left':'arrow-up-right'}" size="16"></i></div><div><p class="text-white text-sm font-medium flex items-center">${t.desc} ${catTag}</p><p class="text-[10px] text-gray-500 uppercase">${new Date(t.date).toLocaleDateString()}</p></div></div><div class="text-right"><p class="font-bold ${isInc?'text-emerald-400':'text-white'}">${formatMoney(t.amount)}</p><button onclick="deleteTrans(${t.id})" class="text-[10px] text-red-500 opacity-50 hover:opacity-100">Borrar</button></div>`;
         list.appendChild(div);
     });
+    if(window.lucide) lucide.createIcons();
+
+    // --- REEMPLAZO DE BOTONES PROFESIONALES (UX MEJORADA) ---
+    // Buscamos o creamos el contenedor de acciones
+    let actionsContainer = document.getElementById('project-actions-container');
+    // Si existe (por renderizados anteriores), lo borramos para recrearlo limpio
+    if (actionsContainer) actionsContainer.remove();
+    
+    // Crear nuevo contenedor al final
+    actionsContainer = document.createElement('div');
+    actionsContainer.id = 'project-actions-container';
+    actionsContainer.className = 'mt-8 pt-6 border-t border-gray-800';
+    
+    const isCompleted = p.status === 'completed';
+    const toggleBtnColor = isCompleted ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500';
+    const toggleIcon = isCompleted ? 'refresh-cw' : 'check-circle';
+    const toggleText = isCompleted ? 'ACTIVAR PROYECTO' : 'MARCAR TERMINADO';
+    
+    actionsContainer.innerHTML = `
+        <div class="flex flex-col gap-3">
+            <button onclick="toggleProjectStatus()" class="w-full py-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-3 ${toggleBtnColor} transition-transform active:scale-95">
+                <i data-lucide="${toggleIcon}" size="20"></i>
+                ${toggleText}
+            </button>
+            <button onclick="deleteCurrentProject()" class="w-full py-3 rounded-xl font-medium text-red-400 hover:text-red-300 hover:bg-red-900/20 border border-transparent hover:border-red-900/50 flex items-center justify-center gap-2 transition-colors">
+                <i data-lucide="trash-2" size="18"></i>
+                Eliminar Proyecto
+            </button>
+        </div>
+    `;
+    
+    // Insertamos al final del contenedor view-project > div.p-4
+    const mainContainer = document.querySelector('#view-project > div.p-4');
+    // Remover los botones viejos si existen (los que estaban hardcodeados en HTML)
+    const oldButtons = mainContainer.querySelector('.mt-10.pt-10.border-t');
+    if(oldButtons) oldButtons.remove();
+    
+    mainContainer.appendChild(actionsContainer);
     if(window.lucide) lucide.createIcons();
 }
 
 function deleteCurrentProject() { if(!confirm("¿ELIMINAR PROYECTO?")) return; projects = projects.filter(x => x.id !== currentProjectId); saveData(); window.history.back(); }
 
-function fillDemo() { document.getElementById('login-email').value=ADMIN_USER; document.getElementById('login-password').value=ADMIN_PASS; }
-
-// LOGICA MEJORADA DEL MODAL DE TRANSACCIONES
 function openTransactionModal(type) { 
     document.getElementById('trans-type').value = type; 
     document.getElementById('trans-amount').value = ''; 
     document.getElementById('trans-desc').value = ''; 
     document.getElementById('modal-trans').classList.remove('hidden');
-    
-    // Mostrar/Ocultar selector de categorías solo si es GASTO
     const catSelector = document.getElementById('cat-selector');
-    if (catSelector) {
-        if (type === 'expense') {
-            catSelector.classList.remove('hidden');
-        } else {
-            catSelector.classList.add('hidden');
-        }
-    }
-    
-    // Focus automático
-    setTimeout(() => {
-        document.getElementById('trans-amount').focus();
-    }, 100);
+    if (catSelector) { if (type === 'expense') { catSelector.classList.remove('hidden'); } else { catSelector.classList.add('hidden'); } }
+    setTimeout(() => { document.getElementById('trans-amount').focus(); }, 100);
 }
-
 function closeModal() { document.getElementById('modal-trans').classList.add('hidden'); }
 document.getElementById('modal-trans').addEventListener('click', e => { if(e.target.id === 'modal-trans') closeModal(); });
 
-// FIX: Cambio de addEventListener a .onsubmit para evitar duplicados
 const formTrans = document.getElementById('form-trans');
 if(formTrans) {
     formTrans.onsubmit = (e) => {
         e.preventDefault();
         if(!currentProjectId) return;
-        
         const type = document.getElementById('trans-type').value;
         const amount = parseMoneyInput('trans-amount');
         const desc = document.getElementById('trans-desc').value;
-        
-        // Capturar Categoría si es Gasto
         let cat = null;
-        if (type === 'expense') {
-            const checkedCat = document.querySelector('input[name="trans-cat"]:checked');
-            if (checkedCat) cat = checkedCat.value;
-        }
-
-        const newTrans = { 
-            id: Date.now(), 
-            type, 
-            amount, 
-            desc, 
-            date: new Date().toISOString(),
-            cat: cat // Guardamos la categoría
-        };
-        
+        if (type === 'expense') { const checkedCat = document.querySelector('input[name="trans-cat"]:checked'); if (checkedCat) cat = checkedCat.value; }
+        const newTrans = { id: Date.now(), type, amount, desc, date: new Date().toISOString(), cat: cat };
         const idx = projects.findIndex(x => x.id === currentProjectId);
-        if(idx > -1) { 
-            projects[idx].transactions.push(newTrans); 
-            saveData(); 
-            closeModal(); 
-            _renderProjectDetails(currentProjectId); 
-        }
+        if(idx > -1) { projects[idx].transactions.push(newTrans); saveData(); closeModal(); _renderProjectDetails(currentProjectId); }
     };
 }
 function deleteTrans(tid) { if(!confirm("¿Borrar?")) return; const idx = projects.findIndex(x => x.id === currentProjectId); if(idx > -1) { projects[idx].transactions = projects[idx].transactions.filter(t => t.id !== tid); saveData(); _renderProjectDetails(currentProjectId); } }
 function shareProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(!p) return; const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); window.open(`https://wa.me/?text=${encodeURIComponent(`*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(p.budget - inc)}`)}`, '_blank'); }
-function toggleProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(p) { p.status = p.status === 'active' ? 'completed' : 'active'; saveData(); alert(`Proyecto marcado como ${p.status === 'completed' ? 'TERMINADO' : 'ACTIVO'}`); } }
+function toggleProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(p) { p.status = p.status === 'active' ? 'completed' : 'active'; saveData(); _renderProjectDetails(currentProjectId); alert(`Proyecto marcado como ${p.status === 'completed' ? 'TERMINADO' : 'ACTIVO'}`); } }
 
-// --- FUNCIONES DEL MENÚ ---
-function toggleBackupMenu() {
-    const menu = document.getElementById('backup-menu');
-    if (menu) {
-        menu.classList.toggle('hidden');
-    }
-}
+function toggleBackupMenu() { const menu = document.getElementById('backup-menu'); if (menu) { menu.classList.toggle('hidden'); } }
+function exportData() { const data = { projects: projects, quotes: quotes, finance: finance, exportedAt: new Date().toISOString() }; const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `AM_Backup_${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); toggleBackupMenu(); }
+function triggerImport() { document.getElementById('file-import').click(); }
+function importData(input) { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if(confirm("Esto reemplazará tus datos actuales con los del archivo. ¿Continuar?")) { if(data.projects) localStorage.setItem(DB_KEY, JSON.stringify(data.projects)); if(data.quotes) localStorage.setItem(QUOTES_KEY, JSON.stringify(data.quotes)); if(data.finance) localStorage.setItem(FINANCE_KEY, JSON.stringify(data.finance)); alert("Datos restaurados correctamente."); location.reload(); } } catch(err) { alert("Error al leer el archivo de respaldo."); } }; reader.readAsText(file); toggleBackupMenu(); }
 
-function exportData() {
-    const data = {
-        projects: projects,
-        quotes: quotes,
-        finance: finance,
-        exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `AM_Backup_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toggleBackupMenu();
-}
-
-function triggerImport() {
-    document.getElementById('file-import').click();
-}
-
-function importData(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if(confirm("Esto reemplazará tus datos actuales con los del archivo. ¿Continuar?")) {
-                if(data.projects) localStorage.setItem(DB_KEY, JSON.stringify(data.projects));
-                if(data.quotes) localStorage.setItem(QUOTES_KEY, JSON.stringify(data.quotes));
-                if(data.finance) localStorage.setItem(FINANCE_KEY, JSON.stringify(data.finance));
-                alert("Datos restaurados correctamente.");
-                location.reload();
-            }
-        } catch(err) {
-            alert("Error al leer el archivo de respaldo.");
-        }
-    };
-    reader.readAsText(file);
-    toggleBackupMenu();
-}
-
-// Utils & Auth
 function formatMoney(amount) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount); }
 function parseMoneyInput(idOrElement) { const el = typeof idOrElement === 'string' ? document.getElementById(idOrElement) : idOrElement; return parseFloat(el.value.replace(/\./g, '').replace(/,/g, '')) || 0; }
 function formatCurrencyInput(input) { let val = input.value.replace(/\D/g, ''); if(val === '') { input.value = ''; return; } input.value = new Intl.NumberFormat('es-CO').format(val); }
 function initMoneyInputs() { document.body.addEventListener('input', e => { if(e.target.classList.contains('money-input')) formatCurrencyInput(e.target); }); }
 function getCatLabel(cat) { const map = { 'food': 'Alimentación', 'transport': 'Transporte', 'materials': 'Materiales', 'extra_income': 'Ingreso Extra', 'personal': 'Personal' }; return map[cat] || cat; }
 function checkAuth() { const isLogged = localStorage.getItem(AUTH_KEY) === 'true'; if(isLogged) { document.getElementById('view-login').classList.add('hidden'); document.getElementById('app-header').classList.remove('hidden'); document.getElementById('app-content').classList.remove('hidden'); } else { document.getElementById('view-login').classList.remove('hidden'); } }
-// FIX: Cambio de addEventListener a .onsubmit
 const formLogin = document.getElementById('form-login');
-if(formLogin) {
-    formLogin.onsubmit = (e) => { 
-        e.preventDefault(); 
-        if(document.getElementById('login-email').value === ADMIN_USER && document.getElementById('login-password').value === ADMIN_PASS) { 
-            localStorage.setItem(AUTH_KEY, 'true'); 
-            checkAuth(); 
-            navigateTo('home'); 
-        } else { 
-            document.getElementById('login-error').classList.remove('hidden'); 
-        } 
-    };
-}
+if(formLogin) { formLogin.onsubmit = (e) => { e.preventDefault(); if(document.getElementById('login-email').value === ADMIN_USER && document.getElementById('login-password').value === ADMIN_PASS) { localStorage.setItem(AUTH_KEY, 'true'); checkAuth(); navigateTo('home'); } else { document.getElementById('login-error').classList.remove('hidden'); } }; }
 function logout() { localStorage.removeItem(AUTH_KEY); location.reload(); }
