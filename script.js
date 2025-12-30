@@ -1,7 +1,7 @@
 // CONFIGURACIÓN LOCAL
 const DB_KEY = 'AM_METALICAS_DB';
 const QUOTES_KEY = 'AM_METALICAS_QUOTES';
-const FINANCE_KEY = 'AM_METALICAS_FINANCE'; // Nueva base de datos
+const FINANCE_KEY = 'AM_METALICAS_FINANCE';
 const AUTH_KEY = 'AM_METALICAS_AUTH';
 
 // CREDENCIALES
@@ -11,11 +11,11 @@ const ADMIN_PASS = 'Miller2026/*';
 // ESTADO GLOBAL
 let projects = [];
 let quotes = [];
-let finance = []; // Array para finanzas personales
+let finance = [];
 let currentProjectId = null;
 let currentQuoteId = null;
 let quoteItems = [];
-let cashflowChart = null; // Variables para gráficos
+let cashflowChart = null;
 let expensesChart = null;
 
 // --- INICIALIZACIÓN ---
@@ -28,15 +28,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initMoneyInputs();
 
-    if (window.history && window.history.state === null) {
+    // MEJORA NAVEGACIÓN: Asegurar historial para botón atrás
+    if (!window.history.state) {
         window.history.replaceState({view: 'home'}, '', '');
     }
+    
     checkAuth();
+    // FORZAR UI HOME: Para que el botón flotante aparezca de inicio
+    if (localStorage.getItem(AUTH_KEY) === 'true') {
+        _internalShowView('home');
+    }
 });
 
 // --- SISTEMA DE DATOS ---
 function loadData() {
-    // Cargar todo
     projects = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
     quotes = JSON.parse(localStorage.getItem(QUOTES_KEY) || '[]');
     finance = JSON.parse(localStorage.getItem(FINANCE_KEY) || '[]');
@@ -44,7 +49,7 @@ function loadData() {
 
 function saveData() {
     localStorage.setItem(DB_KEY, JSON.stringify(projects));
-    renderHome(); // Actualizar dashboard
+    renderHome();
     if (currentProjectId) _renderProjectDetails(currentProjectId);
 }
 
@@ -55,14 +60,15 @@ function saveQuotesData() {
 
 function saveFinanceData() {
     localStorage.setItem(FINANCE_KEY, JSON.stringify(finance));
-    renderFinanceView(); // Actualizar vista finanzas
-    renderHome(); // Actualizar dashboard general
+    renderFinanceView();
+    renderHome();
 }
 
 // --- NAVEGACIÓN ---
 window.addEventListener('popstate', (event) => {
     const state = event.state;
     if (state) {
+        // Navegación interna segura
         if (state.view === 'home') _internalShowView('home');
         else if (state.view === 'project') { if(projects.length===0) loadData(); openProject(state.id, false); }
         else if (state.view === 'new') _internalShowView('new');
@@ -70,7 +76,13 @@ window.addEventListener('popstate', (event) => {
         else if (state.view === 'quotes-list') _internalShowView('quotes-list');
         else if (state.view === 'finance') renderFinanceView();
         else if (state.view === 'reports') renderReports();
+        
+        // Cerrar modales si están abiertos al dar atrás
+        closeFinanceModal();
+        closeModal();
+        closePreviewModal();
     } else {
+        // Si no hay estado (ej: carga inicial forzada), ir al home
         _internalShowView('home');
     }
 });
@@ -87,10 +99,15 @@ function navigateTo(viewId, params = {}) {
     else if (viewId === 'reports') { renderReports(); _internalShowView('reports'); }
 }
 
-function goBack() { window.history.back(); }
+function goBack() { 
+    if(window.history.length > 1) {
+        window.history.back(); 
+    } else {
+        navigateTo('home');
+    }
+}
 
 function _internalShowView(viewId) {
-    // Lista de todas las vistas posibles
     const views = ['view-home', 'view-project', 'view-new', 'view-quote-builder', 'view-quotes-list', 'view-finance', 'view-reports'];
     views.forEach(id => {
         const el = document.getElementById(id);
@@ -100,12 +117,16 @@ function _internalShowView(viewId) {
     const target = document.getElementById(`view-${viewId}`);
     if(target) target.classList.remove('hidden');
     
-    // Gestión de FABs
+    // Gestión de FABs (Botones Flotantes)
     const isHome = viewId === 'home';
     const isProject = viewId === 'project';
     
     const fabHome = document.getElementById('fab-home');
-    if(fabHome) fabHome.style.display = isHome ? 'flex' : 'none';
+    if(fabHome) {
+        // Forzar visibilidad con flex o none
+        fabHome.style.display = isHome ? 'flex' : 'none';
+        fabHome.classList.toggle('hidden', !isHome); // Asegurar que la clase hidden también se quite
+    }
 
     const fabMenu = document.getElementById('fab-menu');
     if(fabMenu) fabMenu.classList.toggle('hidden', !isProject);
@@ -115,13 +136,11 @@ function _internalShowView(viewId) {
 }
 
 // --- LÓGICA FINANZAS PERSONALES ---
-
 function renderFinanceView() {
     _internalShowView('finance');
     const list = document.getElementById('finance-list');
     list.innerHTML = '';
     
-    // Calcular Balance
     const totalIncome = finance.filter(f => f.type === 'income').reduce((s,f) => s + f.amount, 0);
     const totalExpense = finance.filter(f => f.type === 'expense').reduce((s,f) => s + f.amount, 0);
     const balance = totalIncome - totalExpense;
@@ -130,7 +149,6 @@ function renderFinanceView() {
     balanceEl.textContent = formatMoney(balance);
     balanceEl.className = `text-3xl font-bold mt-1 ${balance >= 0 ? 'text-white' : 'text-red-500'}`;
 
-    // Listar
     const sorted = [...finance].sort((a,b) => new Date(b.date) - new Date(a.date));
     
     if(sorted.length === 0) list.innerHTML = `<p class="text-center text-gray-500 py-10">Sin movimientos registrados.</p>`;
@@ -163,37 +181,24 @@ function openFinanceModal(type) {
     document.getElementById('finance-type').value = type;
     document.getElementById('finance-amount').value = '';
     document.getElementById('finance-desc').value = '';
-    
-    // Configurar título y colores
     const isInc = type === 'income';
     document.getElementById('finance-modal-title').textContent = isInc ? "Registrar Entrada" : "Registrar Salida";
     const btn = document.getElementById('btn-save-finance');
     btn.textContent = "GUARDAR";
     btn.className = `w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg ${isInc ? 'btn-success' : 'btn-danger'}`;
-    
     document.getElementById('modal-finance').classList.remove('hidden');
     document.getElementById('finance-amount').focus();
 }
 
 function closeFinanceModal() { document.getElementById('modal-finance').classList.add('hidden'); }
 
-// Guardar Movimiento Financiero
 document.getElementById('form-finance').addEventListener('submit', (e) => {
     e.preventDefault();
     const type = document.getElementById('finance-type').value;
     const amount = parseMoneyInput('finance-amount');
     const desc = document.getElementById('finance-desc').value;
     const cat = document.getElementById('finance-cat').value;
-
-    const newRecord = {
-        id: Date.now(),
-        type,
-        amount,
-        desc,
-        cat,
-        date: new Date().toISOString()
-    };
-    
+    const newRecord = { id: Date.now(), type, amount, desc, cat, date: new Date().toISOString() };
     finance.push(newRecord);
     saveFinanceData();
     closeFinanceModal();
@@ -206,92 +211,40 @@ function deleteFinance(id) {
 }
 
 // --- REPORTES IA & CHART.JS ---
-
 function renderReports() {
-    // 1. Recopilar Datos
     let totalProjectIncome = 0;
     let totalProjectExpense = 0;
-    
-    // Datos de Proyectos
     projects.forEach(p => {
         totalProjectIncome += (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
         totalProjectExpense += (p.transactions||[]).filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
     });
-
-    // Datos Personales
     let totalPersonalIncome = finance.filter(f=>f.type==='income').reduce((s,f)=>s+f.amount,0);
     let totalPersonalExpense = finance.filter(f=>f.type==='expense').reduce((s,f)=>s+f.amount,0);
-
     const grandTotalIncome = totalProjectIncome + totalPersonalIncome;
     const grandTotalExpense = totalProjectExpense + totalPersonalExpense;
 
-    // 2. Generar Insight "IA" (Reglas lógicas)
     generateAIInsight(grandTotalIncome, grandTotalExpense, totalProjectExpense, totalPersonalExpense);
 
-    // 3. Gráfico Flujo de Caja (Barras)
     const ctxCash = document.getElementById('chart-cashflow');
-    if(cashflowChart) cashflowChart.destroy(); // Limpiar anterior
-    
+    if(cashflowChart) cashflowChart.destroy();
     cashflowChart = new Chart(ctxCash, {
         type: 'bar',
         data: {
             labels: ['Ingresos', 'Gastos'],
-            datasets: [{
-                label: 'Proyectos',
-                data: [totalProjectIncome, totalProjectExpense],
-                backgroundColor: '#f59e0b' // Amber
-            }, {
-                label: 'Personal',
-                data: [totalPersonalIncome, totalPersonalExpense],
-                backgroundColor: '#a855f7' // Purple
-            }]
+            datasets: [{ label: 'Proyectos', data: [totalProjectIncome, totalProjectExpense], backgroundColor: '#f59e0b' }, { label: 'Personal', data: [totalPersonalIncome, totalPersonalExpense], backgroundColor: '#a855f7' }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { stacked: true, grid: { color: '#333' }, ticks: { color: '#aaa' } },
-                y: { stacked: true, grid: { color: '#333' }, ticks: { color: '#aaa', callback: function(value){ return '$' + value/1000 + 'k'; } } }
-            },
-            plugins: { legend: { labels: { color: 'white' } } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { color: '#333' }, ticks: { color: '#aaa' } }, y: { stacked: true, grid: { color: '#333' }, ticks: { color: '#aaa', callback: function(value){ return '$' + value/1000 + 'k'; } } } }, plugins: { legend: { labels: { color: 'white' } } } }
     });
 
-    // 4. Gráfico Gastos por Categoría (Dona)
-    // Agrupar gastos de proyectos y finanzas por categoría
     const cats = {};
-    
-    // De proyectos
-    projects.forEach(p => {
-        (p.transactions||[]).filter(t=>t.type==='expense').forEach(t => {
-            const c = t.cat || 'misc';
-            cats[c] = (cats[c] || 0) + t.amount;
-        });
-    });
-    // De finanzas
-    finance.filter(f=>f.type==='expense').forEach(f => {
-        const c = f.cat || 'personal';
-        cats[c] = (cats[c] || 0) + f.amount;
-    });
-
+    projects.forEach(p => { (p.transactions||[]).filter(t=>t.type==='expense').forEach(t => { const c = t.cat || 'misc'; cats[c] = (cats[c] || 0) + t.amount; }); });
+    finance.filter(f=>f.type==='expense').forEach(f => { const c = f.cat || 'personal'; cats[c] = (cats[c] || 0) + f.amount; });
     const ctxExp = document.getElementById('chart-expenses');
     if(expensesChart) expensesChart.destroy();
-
     expensesChart = new Chart(ctxExp, {
         type: 'doughnut',
-        data: {
-            labels: Object.keys(cats).map(k => getCatLabel(k)),
-            datasets: [{
-                data: Object.values(cats),
-                backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#a855f7', '#10b981'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: 'white', font: {size: 10} } } }
-        }
+        data: { labels: Object.keys(cats).map(k => getCatLabel(k)), datasets: [{ data: Object.values(cats), backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#a855f7', '#10b981'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: 'white', font: {size: 10} } } } }
     });
 }
 
@@ -299,74 +252,51 @@ function generateAIInsight(inc, exp, projExp, persExp) {
     const el = document.getElementById('ai-insight-text');
     const margin = inc - exp;
     const marginPercent = inc > 0 ? (margin / inc) * 100 : 0;
-    
     let msg = "";
-    
-    // Lógica "Inteligente"
-    if (inc === 0) {
-        msg = "Aún no hay suficientes datos. Registra tus primeros proyectos o ingresos para que pueda analizar tu rentabilidad.";
-    } else if (margin < 0) {
+    if (inc === 0) msg = "Aún no hay suficientes datos. Registra tus primeros proyectos o ingresos para que pueda analizar tu rentabilidad.";
+    else if (margin < 0) {
         msg = "⚠️ ¡Cuidado! Estás gastando más de lo que ingresas. ";
         if(persExp > projExp) msg += "Tus gastos personales están consumiendo el capital del negocio. Reduce salidas no esenciales.";
         else msg += "Los costos operativos de los proyectos son muy altos. Revisa precios de materiales.";
-    } else if (marginPercent < 20) {
-        msg = "Tu margen de ganancia es bajo (" + Math.round(marginPercent) + "%). En metalmecánica lo ideal es superar el 30%. Intenta negociar mejor los insumos o ajustar el valor de tu mano de obra.";
-    } else {
+    } else if (marginPercent < 20) msg = "Tu margen de ganancia es bajo (" + Math.round(marginPercent) + "%). En metalmecánica lo ideal es superar el 30%. Intenta negociar mejor los insumos o ajustar el valor de tu mano de obra.";
+    else {
         msg = "✅ ¡Excelente gestión! Tu negocio es saludable con un margen del " + Math.round(marginPercent) + "%. ";
         if(persExp < (inc * 0.1)) msg += "Tus gastos personales están controlados. Es un buen momento para reinvertir en maquinaria.";
         else msg += "Sigue así para mantener el crecimiento.";
     }
-    
     el.innerHTML = msg;
 }
 
-
-// --- RENDERIZADO HOME (Dashboard Global) ---
+// --- RENDERIZADO HOME ---
 function renderHome() {
     const list = document.getElementById('projects-list');
     if(!list) return;
     list.innerHTML = '';
     
-    // 1. Calcular Totales Globales (Proyectos + Finanzas)
-    let totalIn = 0;
-    let totalOut = 0;
-    let active = 0;
-
-    // Proyectos
+    let totalIn = 0; let totalOut = 0; let active = 0;
     projects.forEach(p => {
         const pIn = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
         const pOut = (p.transactions||[]).filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-        totalIn += pIn;
-        totalOut += pOut;
+        totalIn += pIn; totalOut += pOut;
         if(p.status === 'active') active++;
     });
+    finance.forEach(f => { if(f.type === 'income') totalIn += f.amount; if(f.type === 'expense') totalOut += f.amount; });
 
-    // Finanzas
-    finance.forEach(f => {
-        if(f.type === 'income') totalIn += f.amount;
-        if(f.type === 'expense') totalOut += f.amount;
-    });
-
-    // Actualizar UI Dashboard
     document.getElementById('dash-cashflow').textContent = formatMoney(totalIn - totalOut);
     document.getElementById('dash-total-in').textContent = formatMoney(totalIn);
     document.getElementById('dash-total-out').textContent = formatMoney(totalOut);
     document.getElementById('active-projects-count').textContent = `${active} Activos`;
 
-    // 2. Renderizar Lista Proyectos
     const sorted = [...projects].sort((a,b) => new Date(b.date) - new Date(a.date));
-
     if(sorted.length === 0) list.innerHTML = `<div class="text-center opacity-30 py-10"><i data-lucide="folder-open" class="mx-auto mb-2" size="48"></i><p>Sin proyectos</p></div>`;
 
     sorted.forEach(p => {
         const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
         const pend = p.budget - inc;
-        
         const el = document.createElement('div');
         el.className = 'card p-4 relative overflow-hidden group hover:border-gray-500 cursor-pointer mb-3';
         el.onclick = () => openProject(p.id);
         const stColor = p.status === 'completed' ? 'bg-blue-600' : (pend <= 0 ? 'bg-emerald-500' : 'bg-amber-500');
-        
         el.innerHTML = `
             <div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div>
             <div class="pl-3">
@@ -374,18 +304,13 @@ function renderHome() {
                     <div><h4 class="font-bold text-white ${p.status==='completed'?'line-through text-gray-500':''}">${p.name}</h4><p class="text-xs text-gray-500">${p.client||'--'}</p></div>
                     <div class="text-right"><span class="text-xs text-gray-500">Total</span><br><span class="font-bold text-white">${formatMoney(p.budget)}</span></div>
                 </div>
-            </div>
-        `;
+            </div>`;
         list.appendChild(el);
     });
-
     if(window.lucide) lucide.createIcons();
 }
 
-// --- RESTO DE FUNCIONES (Cotizaciones, Proyectos, Utilidades) ---
-// Estas se mantienen igual pero necesarias para que todo funcione.
-
-// ... Cotizaciones ...
+// --- COTIZACIONES (DISEÑO MEJORADO) ---
 function loadQuoteBuilder(id = null) {
     currentQuoteId = id;
     const statusBadge = document.getElementById('q-status-badge');
@@ -416,13 +341,35 @@ function renderQuoteItems() {
     list.innerHTML = '';
     quoteItems.forEach((item, idx) => {
         const div = document.createElement('div');
-        div.className = 'bg-gray-800 p-3 rounded-lg border border-gray-700 relative fade-in';
+        // DISEÑO PREMIUM: Tarjeta más limpia
+        div.className = 'bg-gray-900 p-4 rounded-xl border border-gray-800 shadow-sm relative fade-in mb-3';
         div.innerHTML = `
-            <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1 hover:text-red-300"><i data-lucide="trash-2" size="16"></i></button>
-            <div class="mb-2 pr-8"><input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500" placeholder="Descripción" value="${item.desc}" oninput="updateQuoteItem(${idx}, 'desc', this.value)"></div>
+            <div class="flex justify-between items-start mb-3">
+                <span class="bg-gray-800 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold">ITEM ${idx + 1}</span>
+                <button onclick="removeQuoteItem(${idx})" class="text-red-500/50 hover:text-red-500 p-1 transition"><i data-lucide="x" size="16"></i></button>
+            </div>
+            
+            <div class="mb-3">
+                <div class="flex items-center bg-black/50 border border-gray-700 rounded-lg px-3 py-2 focus-within:border-amber-500 transition-colors">
+                    <i data-lucide="edit-3" size="14" class="text-gray-500 mr-2"></i>
+                    <input type="text" class="bg-transparent text-white text-sm w-full outline-none placeholder-gray-600" placeholder="Descripción del trabajo..." value="${item.desc}" oninput="updateQuoteItem(${idx}, 'desc', this.value)">
+                </div>
+            </div>
+
             <div class="flex gap-3">
-                <div class="w-1/3"><label class="text-[10px] text-gray-400 block">Cant.</label><input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center focus:border-amber-500 outline-none" value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))"></div>
-                <div class="w-2/3"><label class="text-[10px] text-gray-400 block">Valor Unitario</label><input type="text" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none money-input" value="${new Intl.NumberFormat('es-CO').format(item.price)}" inputmode="numeric" oninput="formatCurrencyInput(this); updateQuoteItem(${idx}, 'price', parseMoneyInput(this))"></div>
+                <div class="w-1/3">
+                    <div class="bg-black/50 border border-gray-700 rounded-lg p-2 text-center">
+                        <label class="text-[9px] text-gray-500 uppercase tracking-wide block mb-1">Cant.</label>
+                        <input type="number" class="bg-transparent text-white text-center w-full font-bold outline-none" value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))">
+                    </div>
+                </div>
+                <div class="w-2/3">
+                    <div class="bg-black/50 border border-gray-700 rounded-lg p-2 text-right relative">
+                        <label class="text-[9px] text-gray-500 uppercase tracking-wide block mb-1">Valor Unitario</label>
+                        <span class="absolute left-2 bottom-2 text-gray-500 text-xs">$</span>
+                        <input type="text" class="bg-transparent text-amber-400 text-right w-full font-bold outline-none money-input pr-1" value="${new Intl.NumberFormat('es-CO').format(item.price)}" inputmode="numeric" oninput="formatCurrencyInput(this); updateQuoteItem(${idx}, 'price', parseMoneyInput(this))">
+                    </div>
+                </div>
             </div>
         `;
         list.appendChild(div);
@@ -471,7 +418,7 @@ function renderQuotesList() {
 }
 function deleteQuote(id) { if(confirm("¿Eliminar?")) { quotes = quotes.filter(q => q.id !== id); saveQuotesData(); } }
 
-// ... Impresión ...
+// --- IMPRESIÓN / VISTA PREVIA (SOLUCIÓN MÓVIL) ---
 function generateInvoiceHTML() {
     const clientName = document.getElementById('q-client').value || 'Cliente General';
     const dateVal = document.getElementById('q-date').value;
@@ -482,9 +429,58 @@ function generateInvoiceHTML() {
     });
     return `<div class="font-serif"><div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6"><div class="flex items-center gap-4"><img src="https://i.imgur.com/b8MWdC2.png" alt="Logo" style="height: 4rem; width: auto; object-fit: contain;"><div><h1 class="text-2xl font-bold tracking-wider uppercase">AM METÁLICAS</h1><p class="text-xs text-gray-600">Soldadura y Estructuras</p><p class="text-xs text-gray-600">Cel: 300 000 0000</p></div></div><div class="text-right"><h2 class="text-xl font-bold text-gray-800">COTIZACIÓN</h2><p class="text-xs mt-1">Fecha: <span>${new Date(dateVal).toLocaleDateString()}</span></p></div></div><div class="mb-6"><p class="font-bold text-sm">Cliente:</p><p class="text-lg border-b border-dotted border-gray-400 pb-1">${clientName}</p></div><table class="w-full mb-6 border-collapse text-sm"><thead><tr class="bg-gray-100 border-b-2 border-black text-left"><th class="p-2 font-bold w-12">Cant.</th><th class="p-2 font-bold">Descripción</th><th class="p-2 font-bold text-right w-24">V. Unit</th><th class="p-2 font-bold text-right w-24">Total</th></tr></thead><tbody>${itemsRows}</tbody><tfoot><tr class="border-t-2 border-black"><td colspan="3" class="text-right p-3 font-bold text-lg">TOTAL:</td><td class="text-right p-3 font-bold text-lg">${formatMoney(total)}</td></tr></tfoot></table><div class="mt-8 text-center text-xs text-gray-500"><p>Validez: 15 días.</p><p class="mt-8 pt-4 border-t border-gray-300 w-1/2 mx-auto">Firma Autorizada</p><p class="mt-1 font-bold">AM METÁLICAS</p></div></div>`;
 }
-function openPreviewModal() { document.getElementById('preview-paper').innerHTML = generateInvoiceHTML(); document.getElementById('modal-quote-preview').classList.remove('hidden'); }
+
+function openPreviewModal() { 
+    const paper = document.getElementById('preview-paper');
+    paper.innerHTML = generateInvoiceHTML(); 
+    
+    // LÓGICA DE ESCALADO MÓVIL (ZOOM OUT)
+    // El papel mide ~800px de ancho. Si la pantalla es menor, calculamos el factor de escala.
+    const screenWidth = window.innerWidth;
+    const paperWidth = 800; // Ancho base de la hoja
+    
+    if (screenWidth < paperWidth) {
+        // Dejar un margen de 20px a cada lado
+        const scale = (screenWidth - 40) / paperWidth;
+        paper.style.transform = `scale(${scale})`;
+        paper.style.transformOrigin = 'top center';
+        // Ajustar altura del contenedor para compensar el espacio vacío que deja el scale
+        paper.parentElement.style.height = `${(paper.offsetHeight * scale) + 50}px`;
+        paper.parentElement.style.overflow = 'hidden'; // Evitar scroll horizontal
+    } else {
+        paper.style.transform = 'none';
+        paper.parentElement.style.height = 'auto';
+        paper.parentElement.style.overflowY = 'auto';
+    }
+
+    document.getElementById('modal-quote-preview').classList.remove('hidden'); 
+}
+
 function closePreviewModal() { document.getElementById('modal-quote-preview').classList.add('hidden'); }
-function triggerPrint() { const content = document.getElementById('preview-paper').innerHTML; const pa = document.getElementById('printable-area'); pa.innerHTML = content; pa.style.display='block'; window.print(); setTimeout(() => { pa.style.display='none'; }, 1000); }
+
+// FIX: Función mejorada para imprimir y guardar como PDF
+function triggerPrint() { 
+    const content = document.getElementById('preview-paper').innerHTML; 
+    const pa = document.getElementById('printable-area'); 
+    
+    // Copiar contenido
+    pa.innerHTML = content; 
+    
+    // Hacer visible
+    pa.style.display = 'block'; 
+    pa.classList.remove('hidden');
+
+    // Pequeño retardo para asegurar que el navegador renderice el contenido antes de llamar al diálogo
+    setTimeout(() => {
+        window.print(); 
+        
+        // Ocultar de nuevo después de la acción
+        setTimeout(() => { 
+            pa.style.display = 'none'; 
+            pa.classList.add('hidden');
+        }, 1000); 
+    }, 100);
+}
 
 // ... Proyectos e Importar ...
 function renderQuoteSelector() {
