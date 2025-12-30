@@ -202,17 +202,21 @@ function openFinanceModal(type) {
 
 function closeFinanceModal() { document.getElementById('modal-finance').classList.add('hidden'); }
 
-document.getElementById('form-finance').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const type = document.getElementById('finance-type').value;
-    const amount = parseMoneyInput('finance-amount');
-    const desc = document.getElementById('finance-desc').value;
-    const cat = document.getElementById('finance-cat').value;
-    const newRecord = { id: Date.now(), type, amount, desc, cat, date: new Date().toISOString() };
-    finance.push(newRecord);
-    saveFinanceData();
-    closeFinanceModal();
-});
+// FIX: Cambio de addEventListener a .onsubmit para evitar duplicados
+const formFinance = document.getElementById('form-finance');
+if (formFinance) {
+    formFinance.onsubmit = (e) => {
+        e.preventDefault();
+        const type = document.getElementById('finance-type').value;
+        const amount = parseMoneyInput('finance-amount');
+        const desc = document.getElementById('finance-desc').value;
+        const cat = document.getElementById('finance-cat').value;
+        const newRecord = { id: Date.now(), type, amount, desc, cat, date: new Date().toISOString() };
+        finance.push(newRecord);
+        saveFinanceData();
+        closeFinanceModal();
+    };
+}
 
 function deleteFinance(id) {
     if(!confirm("¿Borrar registro?")) return;
@@ -560,9 +564,10 @@ function importQuoteToProject(qid) {
         document.getElementById('new-notes').value = notesText;
     }
 }
+// FIX: Cambio de addEventListener a .onsubmit para evitar duplicados en el Canvas
 const formNew = document.getElementById('form-new');
 if(formNew) {
-    formNew.addEventListener('submit', (e) => {
+    formNew.onsubmit = (e) => {
         e.preventDefault();
         const rawBudget = parseMoneyInput('new-budget');
         const quoteId = document.getElementById('new-import-quote').value;
@@ -583,7 +588,7 @@ if(formNew) {
         saveData();
         e.target.reset();
         window.history.back();
-    });
+    };
 }
 
 function openProject(id, pushState=true) { currentProjectId = id; if(pushState) window.history.pushState({ view: 'project', id: id }, '', ''); _renderProjectDetails(id); _internalShowView('project'); }
@@ -599,6 +604,14 @@ function _renderProjectDetails(id) {
     document.getElementById('pd-pending').textContent = formatMoney(pend);
     document.getElementById('pd-percent').textContent = Math.round(percent) + '%';
     document.getElementById('pd-bar-income').style.width = Math.min(percent, 100) + '%';
+    
+    // FIX: Actualizar enlace de WhatsApp para evitar recarga de página (href="#")
+    const waLink = document.getElementById('whatsapp-link');
+    if(waLink) {
+         const msg = `*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(pend)}`;
+         waLink.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    }
+
     const list = document.getElementById('transactions-list'); list.innerHTML = '';
     const sortedT = [...(p.transactions||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
     if(sortedT.length === 0) list.innerHTML = `<p class="text-center text-gray-500 text-sm">Sin movimientos</p>`;
@@ -613,16 +626,17 @@ function _renderProjectDetails(id) {
 }
 
 function deleteCurrentProject() { if(!confirm("¿ELIMINAR PROYECTO?")) return; projects = projects.filter(x => x.id !== currentProjectId); saveData(); window.history.back(); }
+// FIX: Cambio de addEventListener a .onsubmit para evitar duplicados
 const formTrans = document.getElementById('form-trans');
 if(formTrans) {
-    formTrans.addEventListener('submit', (e) => {
+    formTrans.onsubmit = (e) => {
         e.preventDefault();
         if(!currentProjectId) return;
         const type = document.getElementById('trans-type').value;
         const newTrans = { id: Date.now(), type, amount: parseMoneyInput('trans-amount'), desc: document.getElementById('trans-desc').value, date: new Date().toISOString() };
         const idx = projects.findIndex(x => x.id === currentProjectId);
         if(idx > -1) { projects[idx].transactions.push(newTrans); saveData(); closeModal(); _renderProjectDetails(currentProjectId); }
-    });
+    };
 }
 function deleteTrans(tid) { if(!confirm("¿Borrar?")) return; const idx = projects.findIndex(x => x.id === currentProjectId); if(idx > -1) { projects[idx].transactions = projects[idx].transactions.filter(t => t.id !== tid); saveData(); _renderProjectDetails(currentProjectId); } }
 function shareProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(!p) return; const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); window.open(`https://wa.me/?text=${encodeURIComponent(`*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(p.budget - inc)}`)}`, '_blank'); }
@@ -687,7 +701,20 @@ function formatCurrencyInput(input) { let val = input.value.replace(/\D/g, ''); 
 function initMoneyInputs() { document.body.addEventListener('input', e => { if(e.target.classList.contains('money-input')) formatCurrencyInput(e.target); }); }
 function getCatLabel(cat) { const map = { 'food': 'Alimentación', 'transport': 'Transporte', 'materials': 'Materiales', 'extra_income': 'Ingreso Extra', 'personal': 'Personal' }; return map[cat] || cat; }
 function checkAuth() { const isLogged = localStorage.getItem(AUTH_KEY) === 'true'; if(isLogged) { document.getElementById('view-login').classList.add('hidden'); document.getElementById('app-header').classList.remove('hidden'); document.getElementById('app-content').classList.remove('hidden'); } else { document.getElementById('view-login').classList.remove('hidden'); } }
-document.getElementById('form-login').addEventListener('submit', (e) => { e.preventDefault(); if(document.getElementById('login-email').value === ADMIN_USER && document.getElementById('login-password').value === ADMIN_PASS) { localStorage.setItem(AUTH_KEY, 'true'); checkAuth(); navigateTo('home'); } else { document.getElementById('login-error').classList.remove('hidden'); } });
+// FIX: Cambio de addEventListener a .onsubmit
+const formLogin = document.getElementById('form-login');
+if(formLogin) {
+    formLogin.onsubmit = (e) => { 
+        e.preventDefault(); 
+        if(document.getElementById('login-email').value === ADMIN_USER && document.getElementById('login-password').value === ADMIN_PASS) { 
+            localStorage.setItem(AUTH_KEY, 'true'); 
+            checkAuth(); 
+            navigateTo('home'); 
+        } else { 
+            document.getElementById('login-error').classList.remove('hidden'); 
+        } 
+    };
+}
 function logout() { localStorage.removeItem(AUTH_KEY); location.reload(); }
 function fillDemo() { document.getElementById('login-email').value=ADMIN_USER; document.getElementById('login-password').value=ADMIN_PASS; }
 function openTransactionModal(type) { document.getElementById('trans-type').value = type; document.getElementById('trans-amount').value = ''; document.getElementById('trans-desc').value = ''; document.getElementById('modal-trans').classList.remove('hidden'); }
