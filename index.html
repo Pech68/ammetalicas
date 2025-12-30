@@ -84,6 +84,11 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
         }
+        /* Clase especial para inputs de dinero */
+        .money-input {
+            letter-spacing: 0.5px;
+        }
+
         .input-label {
             position: absolute;
             top: -0.6rem;
@@ -338,6 +343,10 @@
                     <div class="flex-1 overflow-hidden">
                         <h2 class="font-bold text-lg truncate text-white" id="p-detail-name">Proyecto</h2>
                     </div>
+                    <!-- Botón Compartir Estado -->
+                    <button id="share-project-btn" onclick="shareProjectStatus()" class="p-2 text-gray-400 hover:text-white mr-1">
+                        <i data-lucide="share-2" size="20"></i>
+                    </button>
                     <a id="whatsapp-link" href="#" target="_blank" class="p-2 bg-emerald-600 rounded-full text-white shadow-lg hover:bg-emerald-500">
                         <i data-lucide="message-circle" size="20"></i>
                     </a>
@@ -366,12 +375,23 @@
                         </div>
                     </div>
 
+                    <!-- SECCIÓN DE NOTAS / MEDIDAS -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-amber-500 uppercase mb-2">Notas y Medidas</h3>
+                        <div class="bg-gray-800 p-3 rounded border border-gray-700 text-sm text-gray-300 whitespace-pre-wrap" id="pd-notes">
+                            Sin notas adicionales.
+                        </div>
+                    </div>
+
                     <div class="flex border-b border-gray-800 mb-4">
                         <button class="flex-1 pb-3 text-sm font-medium text-amber-500 border-b-2 border-amber-500">Movimientos</button>
                     </div>
                     <div id="transactions-list" class="space-y-3"></div>
                     
-                    <div class="mt-10 pt-10 border-t border-gray-800 text-center">
+                    <div class="mt-10 pt-10 border-t border-gray-800 text-center flex gap-4 justify-center">
+                        <button onclick="toggleProjectStatus()" class="text-gray-400 text-xs py-2 px-4 rounded hover:bg-gray-800 transition border border-gray-700">
+                            Marcar Terminado / Activo
+                        </button>
                         <button onclick="deleteCurrentProject()" class="text-red-900 text-xs py-2 px-4 rounded hover:bg-red-900/20 hover:text-red-500 transition">
                             Eliminar Proyecto
                         </button>
@@ -380,7 +400,7 @@
             </div>
 
             <!-- VISTA: NUEVO PROYECTO -->
-            <div id="view-new" class="hidden p-6 fade-in h-full bg-black absolute inset-0 z-40">
+            <div id="view-new" class="hidden p-6 fade-in h-full bg-black absolute inset-0 z-40 overflow-y-auto">
                 <div class="flex items-center gap-4 mb-6">
                     <button onclick="goBack()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full">
                         <i data-lucide="arrow-left"></i>
@@ -388,14 +408,15 @@
                     <h2 class="text-2xl font-bold text-white">Nuevo Trabajo</h2>
                 </div>
 
-                <form id="form-new" class="space-y-6">
+                <form id="form-new" class="space-y-6 pb-10">
                     <div class="input-group">
                         <label class="input-label">Nombre del Proyecto</label>
                         <input type="text" id="new-name" class="input-field" placeholder="Ej: Estructura Bodega" required>
                     </div>
                     <div class="input-group">
-                        <label class="input-label">Valor Total</label>
-                        <input type="number" id="new-budget" class="input-field text-amber-400 font-bold" placeholder="0" required>
+                        <label class="input-label">Valor Total ($)</label>
+                        <!-- type="text" + inputmode="numeric" para controlar formato -->
+                        <input type="text" id="new-budget" class="input-field text-amber-400 font-bold money-input" placeholder="0" required inputmode="numeric">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="input-group">
@@ -407,6 +428,13 @@
                             <input type="tel" id="new-phone" class="input-field" placeholder="300...">
                         </div>
                     </div>
+                    
+                    <!-- NUEVO CAMPO: Notas / Medidas -->
+                    <div class="input-group">
+                        <label class="input-label">Notas / Medidas</label>
+                        <textarea id="new-notes" class="input-field h-24" placeholder="Ej: Pintura anticorrosiva gris. Medidas: 3m x 5m..."></textarea>
+                    </div>
+
                     <div class="flex gap-4 pt-4">
                         <button type="button" onclick="goBack()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold hover:bg-gray-700">Cancelar</button>
                         <button type="submit" class="flex-1 py-4 btn-primary rounded-xl text-black">CREAR</button>
@@ -474,7 +502,7 @@
             <button onclick="openTransactionModal('income')" class="fab-btn bg-emerald-500 text-white"><i data-lucide="plus"></i></button>
         </div>
 
-        <!-- BOTON FAB HOME (Nuevo Proyecto) - Z-INDEX AUMENTADO y POSICIÓN FIJA -->
+        <!-- BOTON FAB HOME (Nuevo Proyecto) -->
         <button id="fab-home" onclick="navigateTo('new')" class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom,20px))] right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-xl z-40 no-print hidden hover:scale-105 transition-transform active:scale-95">
             <i data-lucide="plus" size="32" color="black"></i>
         </button>
@@ -490,7 +518,8 @@
                     <input type="hidden" id="trans-type">
                     <div class="input-group">
                         <label class="input-label">Monto ($)</label>
-                        <input type="number" id="trans-amount" class="input-field text-2xl font-bold" placeholder="0" required>
+                        <!-- Input de texto para formato miles -->
+                        <input type="text" id="trans-amount" class="input-field text-2xl font-bold money-input" placeholder="0" required inputmode="numeric">
                     </div>
                     <div class="input-group">
                         <label class="input-label">Descripción</label>
@@ -535,12 +564,44 @@
             setTimeout(() => lucide.createIcons(), 100);
             document.getElementById('q-date').valueAsDate = new Date();
             
+            // Inicializar Listeners para formato de dinero
+            initMoneyInputs();
+
             // Inicializar Historial
             if (window.history && window.history.state === null) {
                 window.history.replaceState({view: 'home'}, '', '');
             }
             checkAuth(); 
         });
+
+        // --- MANEJO DE FORMATO DE DINERO (1.000.000) ---
+        function initMoneyInputs() {
+            // Delegación de eventos para inputs dinámicos y estáticos
+            document.body.addEventListener('input', function(e) {
+                if (e.target.classList.contains('money-input')) {
+                    formatCurrencyInput(e.target);
+                }
+            });
+        }
+
+        function formatCurrencyInput(input) {
+            // Eliminar todo lo que no sea número
+            let value = input.value.replace(/\D/g, '');
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+            // Formatear con puntos de miles
+            input.value = new Intl.NumberFormat('es-CO').format(value);
+        }
+
+        // Función para obtener el número real (sin puntos) para guardar en DB
+        function parseMoneyInput(idOrElement) {
+            const el = typeof idOrElement === 'string' ? document.getElementById(idOrElement) : idOrElement;
+            const rawValue = el.value.replace(/\./g, '').replace(/,/g, ''); // Quitar puntos y comas
+            return parseFloat(rawValue) || 0;
+        }
+
 
         // --- MANEJO DEL BOTÓN ATRÁS (Android) ---
         window.addEventListener('popstate', (event) => {
@@ -550,7 +611,6 @@
                     _internalShowView('home');
                     currentProjectId = null;
                 } else if (state.view === 'project') {
-                    // Si recargamos la página o venimos de atrás, necesitamos asegurarnos de que los datos existan
                     if(projects.length === 0) loadData();
                     currentProjectId = state.id;
                     _renderProjectDetails(state.id);
@@ -561,20 +621,15 @@
                     _internalShowView('quote-builder');
                 }
             } else {
-                // Si no hay estado (ej: primera carga), asumimos home
                 _internalShowView('home');
             }
         });
 
         function navigateTo(viewId, params = {}) {
             let state = { view: viewId, ...params };
-            // Mapeo especial para coincidir con los IDs del DOM si es necesario
             if(viewId === 'quote-builder') state.view = 'quote';
-            
-            // Push al historial
             window.history.pushState(state, '', '');
             
-            // Renderizar vista
             if (viewId === 'home') {
                 currentProjectId = null;
                 renderHome();
@@ -598,16 +653,12 @@
                 document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('app-header').classList.remove('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
-                // Si hay un estado guardado (ej: refresh en proyecto), usarlo, sino Home
                 if(history.state && history.state.view !== 'home') {
-                   // Dejar que el popstate o la lógica actual lo maneje, 
-                   // pero forzamos renderHome por si acaso
                    renderHome();
                    if(history.state.view === 'project') {
                        _renderProjectDetails(history.state.id);
                        _internalShowView('project');
                    } else {
-                       // Disparar evento para manejar la vista actual
                        window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
                    }
                 } else {
@@ -636,7 +687,7 @@
             if (email === ADMIN_USER && pass === ADMIN_PASS) {
                 localStorage.setItem(AUTH_KEY, 'true');
                 errorEl.classList.add('hidden');
-                window.history.replaceState({view: 'home'}, '', ''); // Reset history on login
+                window.history.replaceState({view: 'home'}, '', ''); 
                 checkAuth();
             } else {
                 errorEl.classList.remove('hidden');
@@ -711,28 +762,23 @@
         // --- NAVEGACIÓN VISUAL INTERNA ---
 
         function _internalShowView(viewId) {
-            // Ocultar todo
             ['view-home', 'view-project', 'view-new', 'view-quote-builder'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
-            // Mostrar vista deseada
             const targetId = viewId === 'quote-builder' ? 'view-quote-builder' : `view-${viewId}`;
             document.getElementById(targetId).classList.remove('hidden');
             
             const isHome = viewId === 'home';
             const isProject = viewId === 'project';
             
-            // Manejo de botones flotantes
             document.getElementById('fab-home').classList.toggle('hidden', !isHome);
             document.getElementById('fab-menu').classList.toggle('hidden', !isProject);
             
-            // Scroll al top
             if(!isProject) document.getElementById('app-content').scrollTop = 0;
             
             lucide.createIcons();
         }
 
         function goHome() { 
-            // Si hay historial, volver atrás es mejor para mantener la pila lógica
             if (window.history.length > 1) {
                 window.history.back();
             } else {
@@ -755,23 +801,30 @@
                 const exp = trans.filter(t => t.type === 'expense').reduce((s,t)=>s+t.amount,0);
                 const pend = p.budget - inc;
                 
+                // Solo sumar si no está borrado (lógica futura) o archivado
                 tSales += p.budget; tCol += inc; tSpent += exp; tRec += Math.max(0, pend);
                 if(p.status === 'active') active++;
 
                 const el = document.createElement('div');
                 el.className = 'card p-4 active:bg-gray-800 transition cursor-pointer relative overflow-hidden group hover:border-gray-500';
                 
-                // Usamos navigateTo en lugar de openProject directo para gestionar historial
                 el.onclick = () => openProject(p.id); 
                 
-                const stColor = pend <= 0 ? 'bg-emerald-500' : (inc > 0 ? 'bg-amber-500' : 'bg-gray-600');
+                // Color indicador: Verde=Pagado, Ambar=Deuda, Gris=Sin mov/Terminado
+                const stColor = p.status === 'completed' ? 'bg-blue-500' : (pend <= 0 ? 'bg-emerald-500' : (inc > 0 ? 'bg-amber-500' : 'bg-gray-600'));
                 
                 el.innerHTML = `
                     <div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div>
                     <div class="pl-3">
                         <div class="flex justify-between items-start mb-2">
-                            <div><h4 class="font-bold text-white text-lg">${p.name}</h4><p class="text-xs text-gray-500">${p.client || 'Sin cliente'}</p></div>
-                            <div class="text-right"><span class="block text-xs text-gray-500">Total</span><span class="font-bold text-white">${formatMoney(p.budget)}</span></div>
+                            <div>
+                                <h4 class="font-bold text-white text-lg ${p.status === 'completed' ? 'line-through text-gray-500' : ''}">${p.name}</h4>
+                                <p class="text-xs text-gray-500">${p.client || 'Sin cliente'}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-xs text-gray-500">Total</span>
+                                <span class="font-bold text-white">${formatMoney(p.budget)}</span>
+                            </div>
                         </div>
                         <div class="flex justify-between items-center mt-3 bg-black/40 p-2 rounded border border-gray-700/50">
                             <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Abonado</p><p class="text-sm font-bold text-emerald-400">${formatMoney(inc)}</p></div>
@@ -795,12 +848,16 @@
         // --- CREAR PROYECTO ---
         document.getElementById('form-new').addEventListener('submit', (e) => {
             e.preventDefault();
+            // Usar parseMoneyInput para obtener el valor numérico limpio
+            const rawBudget = parseMoneyInput('new-budget');
+            
             const newProject = {
                 id: Date.now(),
                 name: document.getElementById('new-name').value,
-                budget: parseFloat(document.getElementById('new-budget').value),
+                budget: rawBudget,
                 client: document.getElementById('new-client').value,
                 phone: document.getElementById('new-phone').value,
+                notes: document.getElementById('new-notes').value, // Guardar notas
                 date: new Date().toISOString(),
                 status: 'active',
                 transactions: []
@@ -808,26 +865,28 @@
             projects.push(newProject);
             saveData();
             e.target.reset();
-            // Ir atrás (a home) usando historial para que sea fluido
             window.history.back();
         });
 
         // --- DETALLE PROYECTO ---
 
         function openProject(id) {
-            // Push history y render
             currentProjectId = id;
             window.history.pushState({ view: 'project', id: id }, '', '');
             _renderProjectDetails(id);
             _internalShowView('project');
         }
 
-        // Función separada para renderizar sin navegar (usada por popstate)
         function _renderProjectDetails(id) {
             const p = projects.find(x => x.id === id);
-            if(!p) return; // Si no existe (borrado), no hacer nada
+            if(!p) return; 
             
-            document.getElementById('p-detail-name').textContent = p.name;
+            document.getElementById('p-detail-name').textContent = p.name + (p.status === 'completed' ? ' (Terminado)' : '');
+            
+            // Mostrar Notas
+            const notesEl = document.getElementById('pd-notes');
+            notesEl.textContent = p.notes || "Sin notas adicionales.";
+
             const wa = document.getElementById('whatsapp-link');
             if(p.phone) {
                 let ph = p.phone.replace(/\D/g,'');
@@ -871,16 +930,50 @@
             lucide.createIcons();
         }
 
+        // --- NUEVAS FUNCIONES DE ESTADO Y COMPARTIR ---
+        
+        function toggleProjectStatus() {
+            const p = projects.find(x => x.id === currentProjectId);
+            if(!p) return;
+            p.status = p.status === 'active' ? 'completed' : 'active';
+            saveData();
+            _renderProjectDetails(currentProjectId);
+        }
+
+        function shareProjectStatus() {
+            const p = projects.find(x => x.id === currentProjectId);
+            if(!p) return;
+            
+            const trans = p.transactions || [];
+            const inc = trans.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+            const pend = p.budget - inc;
+            
+            const text = `*ESTADO DE CUENTA - AM METÁLICAS*%0A%0A*Proyecto:* ${p.name}%0A*Total:* ${formatMoney(p.budget)}%0A*Abonado:* ${formatMoney(inc)}%0A*Saldo Pendiente:* ${formatMoney(pend)}%0A%0A_Generado automáticamente._`;
+            
+            // Intentar abrir WhatsApp
+            let url = `https://wa.me/?text=${text}`;
+            if(p.phone) {
+                 let ph = p.phone.replace(/\D/g,'');
+                 if(!ph.startsWith('57')) ph = '57'+ph;
+                 url = `https://wa.me/${ph}?text=${text}`;
+            }
+            window.open(url, '_blank');
+        }
+
+
         // --- TRANSACCIONES ---
 
         document.getElementById('form-trans').addEventListener('submit', (e) => {
             e.preventDefault();
             if(!currentProjectId) return;
             const type = document.getElementById('trans-type').value;
+            // Usar parseMoneyInput
+            const rawAmount = parseMoneyInput('trans-amount');
+
             const newTrans = {
                 id: Date.now(),
                 type,
-                amount: parseFloat(document.getElementById('trans-amount').value),
+                amount: rawAmount,
                 desc: document.getElementById('trans-desc').value,
                 cat: type === 'expense' ? document.querySelector('input[name="trans-cat"]:checked').value : null,
                 date: new Date().toISOString()
@@ -890,7 +983,7 @@
                 projects[pIndex].transactions.push(newTrans);
                 saveData();
                 closeModal();
-                _renderProjectDetails(currentProjectId); // Actualizar UI sin recargar
+                _renderProjectDetails(currentProjectId); 
             }
         });
 
@@ -908,7 +1001,7 @@
             if(!confirm('¿ELIMINAR PROYECTO COMPLETAMENTE?')) return;
             projects = projects.filter(x => x.id !== currentProjectId);
             saveData();
-            window.history.back(); // Volver a home
+            window.history.back(); 
         }
 
         // --- COTIZADOR ---
@@ -933,6 +1026,7 @@
             quoteItems.forEach((item, idx) => {
                 const div = document.createElement('div');
                 div.className = 'bg-gray-800 p-3 rounded-lg border border-gray-700 relative';
+                // Input Price modificado para usar money-input y oninput inline
                 div.innerHTML = `
                     <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1 hover:text-red-300"><i data-lucide="trash-2" size="16"></i></button>
                     <div class="mb-2 pr-8">
@@ -940,7 +1034,12 @@
                     </div>
                     <div class="flex gap-3">
                         <div class="w-1/3"><label class="text-[10px] text-gray-400 block">Cant.</label><input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center focus:border-amber-500 outline-none transition-colors" value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))"></div>
-                        <div class="w-2/3"><label class="text-[10px] text-gray-400 block">Valor Unitario</label><input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none transition-colors" value="${item.price}" placeholder="0" oninput="updateQuoteItem(${idx}, 'price', parseFloat(this.value))"></div>
+                        <div class="w-2/3"><label class="text-[10px] text-gray-400 block">Valor Unitario</label>
+                            <input type="text" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none transition-colors money-input" 
+                            value="${new Intl.NumberFormat('es-CO').format(item.price)}" 
+                            placeholder="0" inputmode="numeric"
+                            oninput="formatCurrencyInput(this); updateQuoteItem(${idx}, 'price', parseMoneyInput(this))">
+                        </div>
                     </div>
                 `;
                 list.appendChild(div);
@@ -986,7 +1085,7 @@
             document.getElementById('btn-save-trans').textContent = isInc ? "RECIBIR DINERO" : "REGISTRAR GASTO";
             document.getElementById('btn-save-trans').className = `w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg ${isInc?'btn-success':'btn-danger'}`;
             document.getElementById('cat-selector').classList.toggle('hidden', isInc);
-            document.getElementById('trans-amount').className = `input-field text-2xl font-bold ${isInc?'text-emerald-400':'text-red-400'}`;
+            document.getElementById('trans-amount').className = `input-field text-2xl font-bold money-input ${isInc?'text-emerald-400':'text-red-400'}`;
             document.getElementById('modal-trans').classList.remove('hidden');
             document.getElementById('trans-amount').focus();
         }
