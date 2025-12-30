@@ -12,6 +12,7 @@ body {
     color: #f3f4f6;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
+    /* SOLUCIÓN ANDROID: Altura dinámica para evitar la barra de navegación */
     height: 100vh; 
     height: 100dvh; 
     display: flex;
@@ -42,7 +43,7 @@ body {
     }
 }
 
-/* Inputs y Formularios */
+/* --- FORMULARIOS --- */
 input, select, textarea { font-size: 16px !important; }
 
 .card {
@@ -80,7 +81,7 @@ input, select, textarea { font-size: 16px !important; }
     font-weight: 600;
 }
 
-/* Botones Generales */
+/* --- BOTONES --- */
 .btn-primary {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: #000;
@@ -98,9 +99,11 @@ input, select, textarea { font-size: 16px !important; }
     margin-left: -0.5rem;
     color: #9ca3af;
     border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.nav-back-btn:hover { color: white; background-color: #1f2937; }
-.nav-back-btn:active { background-color: #374151; }
+.nav-back-btn:active { background-color: #374151; color: white; }
 
 .btn-small-action {
     font-size: 0.75rem;
@@ -113,9 +116,9 @@ input, select, textarea { font-size: 16px !important; }
     align-items: center;
     gap: 0.25rem;
 }
-.btn-small-action:hover { background-color: #374151; }
 
-/* Botón Flotante (FAB) */
+/* --- MENU FLOTANTE (FAB) --- */
+/* Subido para evitar conflicto con botones Android */
 .fab-menu {
     position: absolute;
     bottom: calc(9rem + var(--safe-bottom)); 
@@ -158,7 +161,7 @@ input, select, textarea { font-size: 16px !important; }
 .fab-home-btn:hover { transform: scale(1.05); }
 .fab-home-btn:active { transform: scale(0.95); }
 
-/* Menú Dropdown y Otros */
+/* --- MENU DROPDOWN --- */
 .menu-item {
     display: flex;
     align-items: center;
@@ -169,8 +172,7 @@ input, select, textarea { font-size: 16px !important; }
     text-align: left;
     width: 100%;
     font-weight: 500;
-    transition-property: color, background-color;
-    transition-duration: 0.2s;
+    transition: background-color 0.2s;
 }
 
 .cat-chip {
@@ -184,28 +186,35 @@ input, select, textarea { font-size: 16px !important; }
 }
 .cat-chip:hover { background-color: #374151; }
 
-.logo-container, .header-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-.logo-container { height: 6rem; width: 6rem; border-radius: 1rem; border: 2px solid #f59e0b; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); color: #f59e0b; }
-.header-logo { height: 2.5rem; width: 2.5rem; color: #f59e0b; }
+.header-logo { height: 2.5rem; width: 2.5rem; }
+.logo-container { height: 6rem; width: 6rem; border-radius: 1rem; border: 2px solid #f59e0b; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 
-/* Animaciones */
+/* --- UTILIDADES --- */
 .fade-in { animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Estilos de Impresión (PDF) */
+/* --- IMPRESIÓN --- */
 @media print {
     body { background: white; height: auto; display: block; overflow: visible; }
-    #app-container { max-width: none; height: auto; box-shadow: none; overflow: visible; border: none; }
-    body * { visibility: hidden; }
-    #printable-area, #printable-area * { visibility: visible; }
-    #printable-area { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; padding: 0; margin: 0; }
+    #app-container, .fab-menu, .fab-home-btn, #modal-quote-preview { display: none !important; }
+    
+    /* Mostrar solo el área imprimible */
+    #printable-area { 
+        display: block !important; 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        background: white; 
+        color: black; 
+        padding: 0; 
+        margin: 0; 
+        visibility: visible;
+    }
+    #printable-area * { visibility: visible; }
+    
     .no-print { display: none !important; }
 }
