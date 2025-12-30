@@ -18,6 +18,7 @@ let quoteItems = [];
 let cashflowChart = null;
 let expensesChart = null;
 let homeSearchTerm = ''; // Estado para el buscador
+let projectFilter = 'all'; // Estado para el filtro de proyectos (all, active, completed)
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -303,10 +304,7 @@ function renderHome() {
 
     const listContainer = document.getElementById('projects-list');
     
-    // 3. INYECTAR HERRAMIENTAS DE INICIO (Buscador y Actividad Reciente)
-    // Usamos insertBefore para colocarlos antes de la lista, sin romper la estructura HTML
-    
-    // A) BUSCADOR Y FILTROS
+    // 3. INYECTAR HERRAMIENTAS DE INICIO (Buscador y Filtros corregidos)
     let tools = document.getElementById('home-tools');
     if (!tools && listContainer) {
         tools = document.createElement('div');
@@ -318,9 +316,9 @@ function renderHome() {
                 <input type="text" id="home-search" class="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 pl-10 pr-4 text-white outline-none focus:border-amber-500 transition" placeholder="Buscar proyecto o cliente...">
             </div>
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button onclick="setHomeFilter('all')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition whitespace-nowrap">Todos</button>
-                <button onclick="setHomeFilter('active')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-emerald-400 hover:bg-gray-700 transition whitespace-nowrap">En Proceso</button>
-                <button onclick="setHomeFilter('completed')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-blue-400 hover:bg-gray-700 transition whitespace-nowrap">Terminados</button>
+                <button id="filter-btn-all" onclick="setHomeFilter('all')" class="px-4 py-1.5 rounded-full bg-amber-600 border border-amber-600 text-xs text-black font-bold transition whitespace-nowrap">Todos</button>
+                <button id="filter-btn-active" onclick="setHomeFilter('active')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 transition whitespace-nowrap">En Proceso</button>
+                <button id="filter-btn-completed" onclick="setHomeFilter('completed')" class="px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 transition whitespace-nowrap">Terminados</button>
             </div>
         `;
         listContainer.parentNode.insertBefore(tools, listContainer);
@@ -328,19 +326,9 @@ function renderHome() {
         // Listener para búsqueda en tiempo real
         document.getElementById('home-search').addEventListener('input', (e) => {
             homeSearchTerm = e.target.value.toLowerCase();
-            renderProjectsList(); // Solo redibujamos la lista, no todo el home
+            renderProjectsList(); 
         });
     }
-
-    // B) ACTIVIDAD RECIENTE (Últimos 3 movimientos)
-    let recent = document.getElementById('home-recent');
-    if (!recent && listContainer) {
-        recent = document.createElement('div');
-        recent.id = 'home-recent';
-        recent.className = 'mb-6 fade-in';
-        listContainer.parentNode.insertBefore(recent, listContainer);
-    }
-    renderRecentActivity(); // Llenar contenido de actividad
 
     // 4. Renderizar la lista de proyectos (filtrada)
     renderProjectsList();
@@ -349,84 +337,46 @@ function renderHome() {
 }
 
 function setHomeFilter(status) {
-    // Implementación simple de filtros por botón
-    const btns = document.querySelectorAll('#home-tools button');
-    btns.forEach(b => b.classList.remove('bg-amber-600', 'text-black', 'border-amber-600'));
-    // En una app más compleja, marcaríamos el activo. Aquí solo filtramos visualmente rápido.
-    // Para simplificar, recargamos la lista con un filtro global temporal si quisieras, 
-    // pero por ahora dejemos el buscador como principal herramienta.
-    // Si quieres que funcionen los botones, podemos añadir una variable global `homeStatusFilter`.
-}
-
-// Nueva función para renderizar solo la "Actividad Reciente"
-function renderRecentActivity() {
-    const container = document.getElementById('home-recent');
-    if(!container) return;
-
-    // Recolectar TODOS los movimientos
-    let allTrans = [];
+    projectFilter = status; // Actualizamos el estado global
     
-    // De proyectos
-    projects.forEach(p => {
-        if(p.transactions) {
-            p.transactions.forEach(t => {
-                allTrans.push({ ...t, source: p.name, isProject: true });
-            });
+    // Actualizamos estilos de botones
+    const map = {
+        'all': 'filter-btn-all',
+        'active': 'filter-btn-active',
+        'completed': 'filter-btn-completed'
+    };
+    
+    // Resetear todos
+    Object.values(map).forEach(id => {
+        const btn = document.getElementById(id);
+        if(btn) {
+            btn.className = "px-4 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:bg-gray-700 transition whitespace-nowrap";
         }
     });
-    
-    // De finanzas personales
-    finance.forEach(f => {
-        allTrans.push({ ...f, source: 'Gastos Varios', isProject: false });
-    });
 
-    // Ordenar por fecha (más reciente primero) y tomar 3
-    allTrans.sort((a,b) => new Date(b.date) - new Date(a.date));
-    const last3 = allTrans.slice(0, 3);
-
-    if(last3.length === 0) {
-        container.innerHTML = ''; // Si no hay nada, no mostramos nada
-        return;
+    // Activar el seleccionado
+    const activeBtn = document.getElementById(map[status]);
+    if(activeBtn) {
+        activeBtn.className = "px-4 py-1.5 rounded-full bg-amber-600 border border-amber-600 text-xs text-black font-bold transition whitespace-nowrap";
     }
 
-    let html = `<h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 pl-1">Actividad Reciente</h3>
-                <div class="space-y-2">`;
-    
-    last3.forEach(t => {
-        const isInc = t.type === 'income';
-        const color = isInc ? 'text-emerald-400' : 'text-red-400';
-        const icon = isInc ? 'arrow-down-left' : 'arrow-up-right';
-        const bgIcon = isInc ? 'bg-emerald-500/10' : 'bg-red-500/10';
-        
-        html += `
-            <div class="bg-gray-900 border border-gray-800 p-2.5 rounded-lg flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="p-1.5 rounded-full ${bgIcon} ${color}">
-                        <i data-lucide="${icon}" size="14"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-white font-medium line-clamp-1">${t.desc || 'Movimiento'}</p>
-                        <p class="text-[10px] text-gray-500">${t.source} • ${new Date(t.date).toLocaleDateString()}</p>
-                    </div>
-                </div>
-                <span class="text-xs font-bold ${color}">${isInc?'+':'-'}${formatMoney(t.amount)}</span>
-            </div>
-        `;
-    });
-    html += `</div>`;
-    container.innerHTML = html;
+    renderProjectsList(); // Redibujar lista
 }
 
-// Nueva función separada para la lista de proyectos (permite filtrar sin redibujar todo)
 function renderProjectsList() {
     const list = document.getElementById('projects-list');
     if(!list) return;
     list.innerHTML = '';
 
-    // Filtrar proyectos
+    // Filtrar proyectos por Búsqueda Y Estado
     const filtered = projects.filter(p => {
         const matchText = (p.name + p.client).toLowerCase().includes(homeSearchTerm);
-        return matchText;
+        let matchStatus = true;
+        
+        if (projectFilter === 'active') matchStatus = (p.status === 'active');
+        if (projectFilter === 'completed') matchStatus = (p.status === 'completed');
+        
+        return matchText && matchStatus;
     });
 
     const sorted = [...filtered].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -434,7 +384,7 @@ function renderProjectsList() {
     if(sorted.length === 0) {
         list.innerHTML = `<div class="text-center opacity-30 py-10">
             <i data-lucide="search-x" class="mx-auto mb-2" size="32"></i>
-            <p class="text-xs">No se encontraron proyectos</p>
+            <p class="text-xs">No se encontraron proyectos ${projectFilter !== 'all' ? (projectFilter==='active'?'en proceso':'terminados') : ''}</p>
         </div>`;
         if(window.lucide) lucide.createIcons();
         return;
@@ -443,16 +393,36 @@ function renderProjectsList() {
     sorted.forEach(p => {
         const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
         const pend = p.budget - inc;
+        const isCompleted = p.status === 'completed';
+        
         const el = document.createElement('div');
         el.className = 'card p-4 relative overflow-hidden group hover:border-gray-500 cursor-pointer mb-3';
         el.onclick = () => openProject(p.id);
-        const stColor = p.status === 'completed' ? 'bg-blue-600' : (pend <= 0 ? 'bg-emerald-500' : 'bg-amber-500');
+        
+        const stColor = isCompleted ? 'bg-blue-600' : (pend <= 0 ? 'bg-emerald-500' : 'bg-amber-500');
+        
+        // Estilos condicionales para "Terminados" (SIN tachado)
+        const cardOpacity = isCompleted ? 'opacity-75' : 'opacity-100';
+        const titleColor = isCompleted ? 'text-blue-300' : 'text-white';
+        const iconHtml = isCompleted ? '<i data-lucide="check-circle" size="16" class="inline mr-1 text-blue-500"></i>' : '';
+        const badgeHtml = isCompleted ? '<span class="text-[9px] bg-blue-900/50 text-blue-300 px-1.5 py-0.5 rounded border border-blue-800/50 mt-1 inline-block">TERMINADO</span>' : '';
+
         el.innerHTML = `
             <div class="absolute left-0 top-0 bottom-0 w-1 ${stColor}"></div>
-            <div class="pl-3">
-                <div class="flex justify-between">
-                    <div><h4 class="font-bold text-white ${p.status==='completed'?'line-through text-gray-500':''}">${p.name}</h4><p class="text-xs text-gray-500">${p.client||'--'}</p></div>
-                    <div class="text-right"><span class="text-xs text-gray-500">Total</span><br><span class="font-bold text-white">${formatMoney(p.budget)}</span></div>
+            <div class="pl-3 ${cardOpacity}">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold ${titleColor} flex items-center">
+                            ${iconHtml}
+                            ${p.name}
+                        </h4>
+                        <p class="text-xs text-gray-500">${p.client||'--'}</p>
+                        ${badgeHtml}
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-gray-500">Total</span><br>
+                        <span class="font-bold text-white">${formatMoney(p.budget)}</span>
+                    </div>
                 </div>
             </div>`;
         list.appendChild(el);
@@ -756,6 +726,40 @@ function _renderProjectDetails(id) {
          }
     }
 
+    // --- BOTONES DE ACCIÓN DEL PROYECTO (NUEVO: Terminar/Activar) ---
+    // Buscamos o creamos el contenedor de acciones
+    let actionsContainer = document.getElementById('project-actions-container');
+    if (!actionsContainer) {
+        actionsContainer = document.createElement('div');
+        actionsContainer.id = 'project-actions-container';
+        actionsContainer.className = 'mt-6 mb-6 px-1';
+        
+        // Insertamos al final del detalle
+        const detailsContainer = document.getElementById('view-project').querySelector('.container');
+        // Lo ponemos antes del historial de transacciones si es posible, o al final
+        const transList = document.getElementById('transactions-list').parentNode;
+        if(transList) {
+             transList.parentNode.insertBefore(actionsContainer, transList);
+        }
+    }
+
+    // Lógica visual del botón
+    const isCompleted = p.status === 'completed';
+    const btnClass = isCompleted 
+        ? 'w-full py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg transition-colors border-2 border-emerald-500'
+        : 'w-full py-3 rounded-xl font-bold text-white bg-red-600 hover:bg-red-500 shadow-lg transition-colors border-2 border-red-500';
+    const btnText = isCompleted ? 'ACTIVAR PROYECTO' : 'TERMINAR PROYECTO';
+    const btnIcon = isCompleted ? 'refresh-ccw' : 'check-circle';
+
+    actionsContainer.innerHTML = `
+        <button onclick="toggleProjectStatus()" class="${btnClass} flex items-center justify-center gap-2 mb-3">
+            <i data-lucide="${btnIcon}"></i> ${btnText}
+        </button>
+        <button onclick="deleteCurrentProject()" class="w-full py-3 rounded-xl font-bold text-red-500 bg-gray-900 border border-gray-800 hover:bg-gray-800 transition-colors text-xs uppercase tracking-wider">
+            Eliminar Proyecto
+        </button>
+    `;
+
     // --- INYECCIÓN DEL TABLERO DE CONTROL (STATS) ---
     // Buscamos o creamos el contenedor de estadísticas
     let statsContainer = document.getElementById('project-stats-container');
@@ -892,7 +896,17 @@ if(formTrans) {
 }
 function deleteTrans(tid) { if(!confirm("¿Borrar?")) return; const idx = projects.findIndex(x => x.id === currentProjectId); if(idx > -1) { projects[idx].transactions = projects[idx].transactions.filter(t => t.id !== tid); saveData(); _renderProjectDetails(currentProjectId); } }
 function shareProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(!p) return; const inc = (p.transactions||[]).filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); window.open(`https://wa.me/?text=${encodeURIComponent(`*ESTADO: ${p.name}*\nTotal: ${formatMoney(p.budget)}\nAbonado: ${formatMoney(inc)}\nPendiente: ${formatMoney(p.budget - inc)}`)}`, '_blank'); }
-function toggleProjectStatus() { const p = projects.find(x => x.id === currentProjectId); if(p) { p.status = p.status === 'active' ? 'completed' : 'active'; saveData(); alert(`Proyecto marcado como ${p.status === 'completed' ? 'TERMINADO' : 'ACTIVO'}`); } }
+
+// FUNCIÓN MODIFICADA PARA QUE FUNCIONE CON EL NUEVO BOTÓN
+function toggleProjectStatus() { 
+    const p = projects.find(x => x.id === currentProjectId); 
+    if(p) { 
+        p.status = p.status === 'active' ? 'completed' : 'active'; 
+        saveData(); 
+        // Ya no mostramos alerta, sino que refrescamos la UI para que el botón cambie de color inmediatamente
+        _renderProjectDetails(currentProjectId);
+    } 
+}
 
 // --- FUNCIONES DEL MENÚ ---
 function toggleBackupMenu() {
