@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AM METÁLICAS - Acceso</title>
+    <title>AM METÁLICAS - Gestión</title>
+    
+    <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
+    <!-- Metadatos Móviles -->
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,11 +19,14 @@
         :root {
             --safe-bottom: env(safe-area-inset-bottom, 20px);
             --safe-top: env(safe-area-inset-top, 20px);
+            --app-bg: #111;
+            --card-bg: #1f2937;
+            --primary: #f59e0b;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #111;
+            background-color: #222;
             color: #f3f4f6;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none;
@@ -29,6 +35,7 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            margin: 0;
         }
 
         /* Contenedor Principal (Simula el móvil) */
@@ -52,10 +59,11 @@
             }
         }
 
+        /* Ajustes de Inputs */
         input, select, textarea { font-size: 16px !important; }
 
         .card {
-            background-color: #1f2937;
+            background-color: var(--card-bg);
             border: 1px solid #374151;
             border-radius: 1rem;
         }
@@ -73,7 +81,7 @@
             -webkit-appearance: none;
         }
         .input-field:focus {
-            border-color: #f59e0b;
+            border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
         }
         .input-label {
@@ -87,6 +95,7 @@
             font-weight: 600;
         }
 
+        /* Botones */
         .btn-primary {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: #000;
@@ -99,6 +108,7 @@
         .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 600; }
         .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; font-weight: 600; }
         
+        /* Botón Flotante (FAB) */
         .fab-menu {
             position: absolute;
             bottom: calc(5rem + var(--safe-bottom));
@@ -123,15 +133,17 @@
         }
         .fab-btn:active { transform: scale(0.9); }
         
+        /* Animaciones */
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+        /* Estilos de Impresión (PDF) */
         @media print {
-            body { background: white; height: auto; display: block; }
-            #app-container { max-width: none; height: auto; box-shadow: none; overflow: visible; }
+            body { background: white; height: auto; display: block; overflow: visible; }
+            #app-container { max-width: none; height: auto; box-shadow: none; overflow: visible; border: none; }
             body * { visibility: hidden; }
             #printable-area, #printable-area * { visibility: visible; }
             #printable-area { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; padding: 0; margin: 0; }
@@ -143,11 +155,20 @@
 
     <div id="app-container">
 
+        <!-- VISTA: LOGIN -->
         <div id="view-login" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 hidden fade-in">
             <div class="w-full max-w-sm">
                 <div class="text-center mb-10">
-                    <div class="h-24 w-24 bg-black rounded-2xl flex items-center justify-center overflow-hidden border-2 border-amber-500 shadow-2xl mx-auto mb-4">
-                        <img src="https://i.imgur.com/PaRQ1IL.png" alt="AM Metalicas" class="h-full w-full object-contain">
+                    <div class="h-24 w-24 bg-gray-900 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-amber-500 shadow-2xl mx-auto mb-4 text-amber-500">
+                        <!-- SVG LOGO -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                            <path d="M4 22h16"></path>
+                            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                        </svg>
                     </div>
                     <h1 class="text-2xl font-bold text-white tracking-widest">AM METÁLICAS</h1>
                     <p class="text-xs text-gray-500 uppercase tracking-widest mt-1">Acceso Privado</p>
@@ -170,14 +191,20 @@
                     <button type="submit" class="w-full py-4 btn-primary rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2">
                         INGRESAR <i data-lucide="arrow-right" size="20"></i>
                     </button>
+                    
+                    <!-- Botón Demo -->
+                    <button type="button" onclick="fillDemo()" class="w-full text-xs text-gray-600 hover:text-amber-500 mt-4 underline">
+                        Autocompletar (Modo Demo)
+                    </button>
                 </form>
             </div>
         </div>
 
+        <!-- HEADER APP -->
         <header id="app-header" class="hidden bg-gray-900 border-b border-gray-800 p-4 pt-safe-top z-20 flex justify-between items-center h-16 shrink-0 no-print">
             <div class="flex items-center gap-3">
-                <div class="h-10 w-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg">
-                    <img src="https://i.imgur.com/PaRQ1IL.png" alt="AM Metalicas" class="h-full w-full object-contain">
+                <div class="h-10 w-10 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-700 shadow-lg text-amber-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight text-white leading-tight">AM METÁLICAS</h1>
@@ -191,10 +218,10 @@
                  <button onclick="toggleBackupMenu()" class="text-gray-400 hover:text-white p-2 relative">
                     <i data-lucide="settings" size="24"></i>
                     <div id="backup-menu" class="hidden absolute right-0 top-12 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-2">
-                        <button onclick="exportData()" class="flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-xs text-left w-full">
+                        <button onclick="exportData()" class="flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-xs text-left w-full text-white">
                             <i data-lucide="download" size="14"></i> Guardar Copia
                         </button>
-                        <button onclick="triggerImport()" class="flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-xs text-left w-full">
+                        <button onclick="triggerImport()" class="flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-xs text-left w-full text-white">
                             <i data-lucide="upload" size="14"></i> Restaurar Copia
                         </button>
                         <input type="file" id="file-import" class="hidden" accept=".json" onchange="importData(this)">
@@ -206,8 +233,10 @@
             </div>
         </header>
 
+        <!-- CONTENIDO PRINCIPAL -->
         <main id="app-content" class="hidden flex-1 overflow-y-auto no-scrollbar relative bg-black">
             
+            <!-- VISTA: HOME -->
             <div id="view-home" class="p-4 pb-32 fade-in">
                 
                 <div class="grid grid-cols-2 gap-3 mb-6">
@@ -217,19 +246,19 @@
                             <span class="text-3xl font-bold text-white tracking-tight" id="dash-cashflow">$0</span>
                         </div>
                         <div class="mt-3 flex gap-2 text-xs">
-                            <span class="text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Ingresos</span>
-                            <span class="text-red-500 bg-red-500/10 px-2 py-1 rounded">Gastos</span>
+                            <span class="text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">Ingresos</span>
+                            <span class="text-red-500 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">Gastos</span>
                         </div>
                     </div>
 
                     <div class="card p-4 border-l-4 border-l-red-500">
                         <span class="text-[10px] text-gray-400 uppercase">Por Cobrar</span>
-                        <span class="text-lg font-bold text-red-400 mt-1" id="dash-receivable">$0</span>
+                        <span class="text-lg font-bold text-red-400 mt-1 block" id="dash-receivable">$0</span>
                     </div>
 
                     <div class="card p-4 border-l-4 border-l-emerald-500">
                         <span class="text-[10px] text-gray-400 uppercase">Ventas Totales</span>
-                        <span class="text-lg font-bold text-emerald-400 mt-1" id="dash-sales">$0</span>
+                        <span class="text-lg font-bold text-emerald-400 mt-1 block" id="dash-sales">$0</span>
                     </div>
                 </div>
 
@@ -252,11 +281,13 @@
                 </div>
 
                 <div id="projects-list" class="space-y-4">
-                    </div>
+                    <!-- Lista de proyectos renderizada vía JS -->
+                </div>
                 
                 <div class="h-20"></div>
             </div>
 
+            <!-- VISTA: CREADOR DE COTIZACIONES -->
             <div id="view-quote-builder" class="hidden min-h-full bg-black fade-in pb-32 p-4">
                 <div class="flex items-center gap-4 mb-6">
                     <button onclick="goHome()" class="p-2 -ml-2 text-gray-400 hover:text-white">
@@ -274,13 +305,13 @@
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-sm font-bold text-amber-500 uppercase">Items / Servicios</h3>
-                        <button onclick="addQuoteItem()" class="text-xs bg-gray-800 px-3 py-1 rounded text-white border border-gray-600 flex items-center gap-1">
+                        <button onclick="addQuoteItem()" class="text-xs bg-gray-800 px-3 py-1 rounded text-white border border-gray-600 flex items-center gap-1 hover:bg-gray-700">
                             <i data-lucide="plus" size="12"></i> Agregar Item
                         </button>
                     </div>
                     <div id="quote-items-list" class="space-y-3"></div>
                 </div>
-                <div class="card p-4 mb-6 flex justify-between items-center">
+                <div class="card p-4 mb-6 flex justify-between items-center bg-gray-800">
                     <span class="text-gray-400">Total Estimado:</span>
                     <span class="text-2xl font-bold text-white" id="q-total-preview">$0</span>
                 </div>
@@ -289,13 +320,14 @@
                 </button>
             </div>
 
-            <div id="view-project" class="hidden min-h-full bg-gray-900 fade-in pb-24 absolute inset-0 z-30">
+            <!-- VISTA: DETALLE DE PROYECTO -->
+            <div id="view-project" class="hidden min-h-full bg-gray-900 fade-in pb-24 absolute inset-0 z-30 overflow-y-auto no-scrollbar">
                 <div class="sticky top-0 bg-gray-900/95 backdrop-blur border-b border-gray-800 p-4 flex items-center gap-4 z-10">
                     <button onclick="goHome()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800">
                         <i data-lucide="arrow-left"></i>
                     </button>
                     <div class="flex-1 overflow-hidden">
-                        <h2 class="font-bold text-lg truncate" id="p-detail-name">Proyecto</h2>
+                        <h2 class="font-bold text-lg truncate text-white" id="p-detail-name">Proyecto</h2>
                     </div>
                     <a id="whatsapp-link" href="#" target="_blank" class="p-2 bg-emerald-600 rounded-full text-white shadow-lg hover:bg-emerald-500">
                         <i data-lucide="message-circle" size="20"></i>
@@ -303,7 +335,7 @@
                 </div>
 
                 <div class="p-4">
-                    <div class="card p-5 mb-6 relative overflow-hidden">
+                    <div class="card p-5 mb-6 relative overflow-hidden bg-gray-800 border-gray-700">
                          <div class="grid grid-cols-2 gap-6 text-center mb-4">
                             <div>
                                 <p class="text-xs text-gray-400 uppercase mb-1">Total</p>
@@ -320,7 +352,7 @@
                                 <span class="text-gray-500" id="pd-percent">0%</span>
                             </div>
                             <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                                <div id="pd-bar-income" class="bg-emerald-500 h-full" style="width: 0%"></div>
+                                <div id="pd-bar-income" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
@@ -329,6 +361,7 @@
                         <button class="flex-1 pb-3 text-sm font-medium text-amber-500 border-b-2 border-amber-500">Movimientos</button>
                     </div>
                     <div id="transactions-list" class="space-y-3"></div>
+                    
                     <div class="mt-10 pt-10 border-t border-gray-800 text-center">
                         <button onclick="deleteCurrentProject()" class="text-red-900 text-xs py-2 px-4 rounded hover:bg-red-900/20 hover:text-red-500 transition">
                             Eliminar Proyecto
@@ -337,6 +370,7 @@
                 </div>
             </div>
 
+            <!-- VISTA: NUEVO PROYECTO -->
             <div id="view-new" class="hidden p-6 fade-in h-full bg-black absolute inset-0 z-40">
                 <h2 class="text-2xl font-bold text-white mb-6">Nuevo Trabajo</h2>
                 <form id="form-new" class="space-y-6">
@@ -359,7 +393,7 @@
                         </div>
                     </div>
                     <div class="flex gap-4 pt-4">
-                        <button type="button" onclick="goHome()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold">Cancelar</button>
+                        <button type="button" onclick="goHome()" class="flex-1 py-4 bg-gray-800 rounded-xl text-gray-400 font-bold hover:bg-gray-700">Cancelar</button>
                         <button type="submit" class="flex-1 py-4 btn-primary rounded-xl text-black">CREAR</button>
                     </div>
                 </form>
@@ -367,10 +401,19 @@
 
         </main>
 
+        <!-- AREA IMPRIMIBLE (COTIZACIÓN) -->
         <div id="printable-area" class="hidden bg-white text-black p-8 font-serif">
             <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
                 <div class="flex items-center gap-4">
-                     <img src="https://i.imgur.com/PaRQ1IL.png" alt="Logo" class="h-20 w-auto object-contain">
+                    <!-- Logo SVG negro para impresión -->
+                     <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                        <path d="M4 22h16"></path>
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                    </svg>
                      <div>
                          <h1 class="text-3xl font-bold tracking-wider">AM METÁLICAS</h1>
                          <p class="text-sm text-gray-600">Soldadura y Estructuras</p>
@@ -410,20 +453,23 @@
             </div>
         </div>
 
+        <!-- MENU FAB (Botones flotantes detalle proyecto) -->
         <div id="fab-menu" class="fab-menu hidden no-print absolute">
             <button onclick="openTransactionModal('expense')" class="fab-btn bg-red-600 text-white"><i data-lucide="minus"></i></button>
             <button onclick="openTransactionModal('income')" class="fab-btn bg-emerald-500 text-white"><i data-lucide="plus"></i></button>
         </div>
 
-        <button id="fab-home" onclick="showView('new')" class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom,20px))] right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-xl z-30 no-print hidden">
+        <!-- BOTON FAB HOME (Nuevo Proyecto) -->
+        <button id="fab-home" onclick="showView('new')" class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom,20px))] right-6 w-14 h-14 btn-primary rounded-full flex items-center justify-center shadow-xl z-30 no-print hidden hover:scale-105 transition">
             <i data-lucide="plus" size="32" color="black"></i>
         </button>
 
+        <!-- MODAL TRANSACCIONES -->
         <div id="modal-trans" class="absolute inset-0 bg-black/90 z-50 hidden flex items-end sm:items-center justify-center fade-in no-print">
-            <div class="bg-gray-900 w-full rounded-t-2xl sm:rounded-2xl p-6 border-t border-gray-800 sm:border shadow-2xl">
+            <div class="bg-gray-900 w-full rounded-t-2xl sm:rounded-2xl p-6 border-t border-gray-800 sm:border shadow-2xl max-w-sm">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-white" id="modal-title">Registrar</h3>
-                    <button onclick="closeModal()" class="text-gray-500"><i data-lucide="x"></i></button>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-white"><i data-lucide="x"></i></button>
                 </div>
                 <form id="form-trans" class="space-y-5">
                     <input type="hidden" id="trans-type">
@@ -436,16 +482,27 @@
                         <input type="text" id="trans-desc" class="input-field" placeholder="Descripción" required>
                     </div>
                     <div id="cat-selector" class="grid grid-cols-3 gap-2 hidden">
-                         <label class="cursor-pointer"><input type="radio" name="trans-cat" value="material" class="peer hidden" checked><div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-amber-600 peer-checked:text-black">Material</div></label>
-                         <label class="cursor-pointer"><input type="radio" name="trans-cat" value="labor" class="peer hidden"><div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-blue-600">Mano Obra</div></label>
-                         <label class="cursor-pointer"><input type="radio" name="trans-cat" value="transport" class="peer hidden"><div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-purple-600">Transporte</div></label>
+                         <label class="cursor-pointer">
+                             <input type="radio" name="trans-cat" value="material" class="peer hidden" checked>
+                             <div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-amber-600 peer-checked:text-black peer-checked:font-bold hover:bg-gray-700 transition">Material</div>
+                        </label>
+                         <label class="cursor-pointer">
+                             <input type="radio" name="trans-cat" value="labor" class="peer hidden">
+                             <div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-blue-600 peer-checked:text-white peer-checked:font-bold hover:bg-gray-700 transition">Mano Obra</div>
+                        </label>
+                         <label class="cursor-pointer">
+                             <input type="radio" name="trans-cat" value="transport" class="peer hidden">
+                             <div class="bg-gray-800 border border-gray-700 p-2 rounded text-center text-xs peer-checked:bg-purple-600 peer-checked:text-white peer-checked:font-bold hover:bg-gray-700 transition">Transporte</div>
+                        </label>
                     </div>
-                    <button type="submit" class="w-full py-4 rounded-xl font-bold text-lg mt-4" id="btn-save-trans">Guardar</button>
+                    <button type="submit" class="w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg" id="btn-save-trans">Guardar</button>
                 </form>
             </div>
         </div>
 
-    </div> <script>
+    </div> 
+    
+    <script>
         // CONFIGURACIÓN LOCAL
         const DB_KEY = 'AM_METALICAS_DB';
         const AUTH_KEY = 'AM_METALICAS_AUTH';
@@ -460,7 +517,9 @@
         // INICIALIZACIÓN
         document.addEventListener('DOMContentLoaded', () => {
             loadData(); 
-            lucide.createIcons();
+            // Esperar un poco para asegurar que Lucide cargó
+            setTimeout(() => lucide.createIcons(), 100);
+            
             document.getElementById('q-date').valueAsDate = new Date();
             checkAuth(); // Verificar si ya inició sesión
         });
@@ -482,6 +541,12 @@
             }
         }
 
+        // Función para demo rápido
+        function fillDemo() {
+            document.getElementById('login-email').value = ADMIN_USER;
+            document.getElementById('login-password').value = ADMIN_PASS;
+        }
+
         document.getElementById('form-login').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -500,7 +565,7 @@
         function logout() {
             if(confirm('¿Cerrar sesión?')) {
                 localStorage.removeItem(AUTH_KEY);
-                location.reload(); // Recargar para limpiar estado visual
+                location.reload(); 
             }
         }
 
@@ -509,7 +574,11 @@
         function loadData() {
             const raw = localStorage.getItem(DB_KEY);
             if (raw) {
-                projects = JSON.parse(raw);
+                try {
+                    projects = JSON.parse(raw);
+                } catch(e) {
+                    projects = [];
+                }
             } else {
                 projects = [];
             }
@@ -581,6 +650,7 @@
             document.getElementById('fab-menu').classList.toggle('hidden', !isProject);
             
             if(isHome) renderHome();
+            lucide.createIcons();
         }
 
         function goHome() { 
@@ -612,7 +682,7 @@
                 if(p.status === 'active') active++;
 
                 const el = document.createElement('div');
-                el.className = 'card p-4 active:bg-gray-800 transition cursor-pointer relative overflow-hidden';
+                el.className = 'card p-4 active:bg-gray-800 transition cursor-pointer relative overflow-hidden group hover:border-gray-500';
                 el.onclick = () => openProject(p.id);
                 const stColor = pend <= 0 ? 'bg-emerald-500' : (inc > 0 ? 'bg-amber-500' : 'bg-gray-600');
                 
@@ -623,7 +693,7 @@
                             <div><h4 class="font-bold text-white text-lg">${p.name}</h4><p class="text-xs text-gray-500">${p.client || 'Sin cliente'}</p></div>
                             <div class="text-right"><span class="block text-xs text-gray-500">Total</span><span class="font-bold text-white">${formatMoney(p.budget)}</span></div>
                         </div>
-                        <div class="flex justify-between items-center mt-3 bg-gray-900/50 p-2 rounded border border-gray-700/50">
+                        <div class="flex justify-between items-center mt-3 bg-black/40 p-2 rounded border border-gray-700/50">
                             <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Abonado</p><p class="text-sm font-bold text-emerald-400">${formatMoney(inc)}</p></div>
                              <div class="text-center w-1/3 border-r border-gray-700"><p class="text-[10px] text-gray-400">Gastado</p><p class="text-sm font-bold text-red-400">${formatMoney(exp)}</p></div>
                             <div class="text-center w-1/3"><p class="text-[10px] text-gray-400">Por Cobrar</p><p class="text-sm font-bold ${pend>0?'text-amber-500':'text-gray-500'}">${formatMoney(pend)}</p></div>
@@ -639,6 +709,7 @@
             document.getElementById('dash-receivable').textContent = formatMoney(tRec);
             document.getElementById('dash-sales').textContent = formatMoney(tSales);
             document.getElementById('active-projects-count').textContent = `${active} Activos`;
+            
             lucide.createIcons();
         }
 
@@ -701,7 +772,7 @@
             sortedTrans.forEach(t => {
                 const isInc = t.type === 'income';
                 const div = document.createElement('div');
-                div.className = 'flex justify-between items-center bg-gray-800/50 p-3 rounded border border-gray-700/50';
+                div.className = 'flex justify-between items-center bg-black/40 p-3 rounded border border-gray-700/50';
                 div.innerHTML = `
                     <div class="flex items-center gap-3">
                         <div class="p-2 rounded-full ${isInc?'bg-emerald-500/20 text-emerald-500':'bg-red-500/20 text-red-500'}"><i data-lucide="${isInc?'arrow-down-left':'arrow-up-right'}" size="16"></i></div>
@@ -779,21 +850,21 @@
                 const div = document.createElement('div');
                 div.className = 'bg-gray-800 p-3 rounded-lg border border-gray-700 relative';
                 div.innerHTML = `
-                    <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1"><i data-lucide="trash-2" size="16"></i></button>
+                    <button onclick="removeQuoteItem(${idx})" class="absolute top-2 right-2 text-red-400 p-1 hover:text-red-300"><i data-lucide="trash-2" size="16"></i></button>
                     <div class="mb-2 pr-8">
-                        <input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500" 
+                        <input type="text" class="bg-transparent text-white w-full border-b border-gray-600 focus:border-amber-500 outline-none pb-1 placeholder-gray-500 transition-colors" 
                             placeholder="Descripción" value="${item.desc}" 
                             oninput="updateQuoteItem(${idx}, 'desc', this.value)">
                     </div>
                     <div class="flex gap-3">
                         <div class="w-1/3">
                             <label class="text-[10px] text-gray-400 block">Cant.</label>
-                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center" 
+                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-center focus:border-amber-500 outline-none transition-colors" 
                                 value="${item.qty}" min="1" oninput="updateQuoteItem(${idx}, 'qty', parseFloat(this.value))">
                         </div>
                         <div class="w-2/3">
                             <label class="text-[10px] text-gray-400 block">Valor Unitario</label>
-                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono" 
+                            <input type="number" class="bg-gray-900 text-white w-full p-2 rounded border border-gray-600 text-right font-mono focus:border-amber-500 outline-none transition-colors" 
                                 value="${item.price}" placeholder="0" oninput="updateQuoteItem(${idx}, 'price', parseFloat(this.value))">
                         </div>
                     </div>
@@ -839,7 +910,7 @@
             const isInc = type === 'income';
             document.getElementById('modal-title').textContent = isInc ? "Registrar Abono" : "Registrar Gasto";
             document.getElementById('btn-save-trans').textContent = isInc ? "RECIBIR DINERO" : "REGISTRAR GASTO";
-            document.getElementById('btn-save-trans').className = `w-full py-4 rounded-xl font-bold text-lg mt-4 ${isInc?'btn-success':'btn-danger'}`;
+            document.getElementById('btn-save-trans').className = `w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg ${isInc?'btn-success':'btn-danger'}`;
             document.getElementById('cat-selector').classList.toggle('hidden', isInc);
             document.getElementById('trans-amount').className = `input-field text-2xl font-bold ${isInc?'text-emerald-400':'text-red-400'}`;
             document.getElementById('modal-trans').classList.remove('hidden');
